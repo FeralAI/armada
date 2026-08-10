@@ -63,6 +63,10 @@ CALIBRATION_PARAMS = (
     "trigger_right_deadzone",
     "trigger_right_antideadzone",
 )
+CALIBRATION_BACKENDS = {
+    "rsinput": Path("/sys/module/rsinput/parameters"),
+    "retroid": Path("/sys/module/retroid/parameters"),
+}
 
 
 def atomic_write(path, text):
@@ -238,13 +242,18 @@ def action_write_config(request):
         raise ValueError("config payload too large")
     if name == "calibration":
         params = json.loads(text)
-        rsinput = Path("/sys/module/rsinput/parameters")
-        if not rsinput.exists():
+        if not isinstance(params, dict):
+            raise ValueError("calibration config must be an object")
+        backend = params.get("backend", "rsinput")
+        parameters = CALIBRATION_BACKENDS.get(backend)
+        if parameters is None:
+            raise ValueError("invalid calibration backend")
+        if not parameters.exists():
             raise RuntimeError("controller calibration is not supported on this device")
         for param in CALIBRATION_PARAMS:
             if param in params:
-                (rsinput / param).write_text(str(int(params[param])), encoding="utf-8")
-        (rsinput / "update_params").write_text("1", encoding="utf-8")
+                (parameters / param).write_text(str(int(params[param])), encoding="utf-8")
+        (parameters / "update_params").write_text("1", encoding="utf-8")
     atomic_write(CONFIG_PATHS[name], text)
     if name == "power":
         run(["/usr/bin/armada-power", "reload"], timeout=15)
