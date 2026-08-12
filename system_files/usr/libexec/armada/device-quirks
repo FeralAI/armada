@@ -1,7 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-eval "$(/usr/libexec/armada/device-env)"
+device_env=${ARMADA_DEVICE_ENV:-/usr/libexec/armada/device-env}
+mem_sleep=${ARMADA_MEM_SLEEP_PATH:-/sys/power/mem_sleep}
+nm_ignore_sleep=${ARMADA_NM_IGNORE_SLEEP:-/etc/NetworkManager/ignore-sleep}
+
+eval "$("$device_env")"
 
 # AYANEO Pocket MCUs need this serial frame to switch to fake-Xbox-360 mode
 # (045e:028e); without it the kernel can't drive the controller.
@@ -30,11 +34,25 @@ case "${ARMADA_GAMEPAD_QUIRK:-none}" in
         ;;
 esac
 
+# Keep the kernel selection aligned with the saved preference after reboot.
+if [[ "${ARMADA_SUSPEND_MODE:-fake}" == "s2idle" ||
+    "${ARMADA_SUSPEND_MODE:-fake}" == "deep" ]]; then
+    if [[ -w "$mem_sleep" ]] && grep -qw "$ARMADA_SUSPEND_MODE" "$mem_sleep"; then
+        if ! echo "$ARMADA_SUSPEND_MODE" >"$mem_sleep"; then
+            echo "device-quirks: failed to select $ARMADA_SUSPEND_MODE in $mem_sleep" >&2
+        fi
+    fi
+fi
+
 # fake-suspend keeps wifi associated; real suspend needs NM to drop and reconnect.
 if [[ "${ARMADA_SUSPEND_MODE:-fake}" != "fake" ]]; then
-    rm -f /etc/NetworkManager/ignore-sleep
+    if ! rm -f "$nm_ignore_sleep"; then
+        echo "device-quirks: failed to remove $nm_ignore_sleep" >&2
+    fi
 else
-    touch /etc/NetworkManager/ignore-sleep
+    if ! touch "$nm_ignore_sleep"; then
+        echo "device-quirks: failed to create $nm_ignore_sleep" >&2
+    fi
 fi
 
 if [[ "${ARMADA_SOC_CLASS:-}" == "SM8550" ]]; then

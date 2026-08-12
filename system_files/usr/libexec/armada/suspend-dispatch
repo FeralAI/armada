@@ -18,7 +18,10 @@ if [[ "$mode" == "s2idle" || "$mode" == "deep" ]]; then
         echo "suspend-dispatch: unsupported sleep mode $mode; using fake suspend" >&2
         exec "$fake_suspend" sleep
     fi
-    echo "$mode" >"$mem_sleep"
+    if ! echo "$mode" >"$mem_sleep"; then
+        echo "suspend-dispatch: failed to select sleep mode $mode; using fake suspend" >&2
+        exec "$fake_suspend" sleep
+    fi
 elif [[ "$mode" != "mem" ]]; then
     echo "suspend-dispatch: invalid sleep mode $mode; using fake suspend" >&2
     exec "$fake_suspend" sleep

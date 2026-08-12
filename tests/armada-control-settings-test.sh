@@ -43,12 +43,15 @@ assert plugin_system.sleep_modes() == [
 control.SLEEP_CONFIG.write_text("future_sleep_setting=keep\n")
 control.NM_IGNORE_SLEEP.touch()
 assert control.action_set_sleep_mode({"value": "s2idle"}) == {"value": "s2idle"}
+assert control.MEM_SLEEP_PATH.read_text() == "s2idle\n"
 assert control.SLEEP_CONFIG.read_text() == (
     "future_sleep_setting=keep\nsuspend_mode=s2idle\n"
 )
 assert not control.NM_IGNORE_SLEEP.exists()
 
+control.MEM_SLEEP_PATH.write_text("[s2idle] deep\n")
 assert control.action_set_sleep_mode({"value": "deep"}) == {"value": "deep"}
+assert control.MEM_SLEEP_PATH.read_text() == "deep\n"
 assert control.SLEEP_CONFIG.read_text() == (
     "future_sleep_setting=keep\nsuspend_mode=deep\n"
 )
@@ -116,6 +119,30 @@ env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
     ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
     "$ROOT/system_files/usr/libexec/armada/device-env" |
     grep -x 'ARMADA_SUSPEND_MODE=s2idle' >/dev/null
+
+# Boot-time quirks reapply a saved native mode and NetworkManager policy.
+printf '[s2idle] deep\n' >"$WORK/mem_sleep"
+printf 'suspend_mode=s2idle\n' >"$WORK/sleep.conf"
+touch "$WORK/ignore-sleep"
+env ARMADA_DEVICE_ENV="$ROOT/system_files/usr/libexec/armada/device-env" \
+    ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
+    ARMADA_MODEL="AYN Odin 2" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
+    ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
+    ARMADA_NM_IGNORE_SLEEP="$WORK/ignore-sleep" \
+    "$ROOT/system_files/usr/libexec/armada/device-quirks"
+grep -x 's2idle' "$WORK/mem_sleep" >/dev/null
+[[ ! -e "$WORK/ignore-sleep" ]]
+
+printf '[s2idle] deep\n' >"$WORK/mem_sleep"
+printf 'suspend_mode=fake\n' >"$WORK/sleep.conf"
+env ARMADA_DEVICE_ENV="$ROOT/system_files/usr/libexec/armada/device-env" \
+    ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
+    ARMADA_MODEL="AYN Odin 2" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
+    ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
+    ARMADA_NM_IGNORE_SLEEP="$WORK/ignore-sleep" \
+    "$ROOT/system_files/usr/libexec/armada/device-quirks"
+grep -Fx '[s2idle] deep' "$WORK/mem_sleep" >/dev/null
+[[ -e "$WORK/ignore-sleep" ]]
 
 printf '%s\n' \
     '#!/usr/bin/env bash' \
