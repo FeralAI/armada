@@ -90,12 +90,6 @@ export function Settings({ config, setConfig }: {
         <Field label="ABL Version" description={config.ablVersion || "unknown"} />
       </PanelSection>
       <PanelSection title="Experimental">
-        <ToggleRow
-          label="USB File Transfer"
-          description={config.mtpEnabled ? "Enabled until shutdown" : undefined}
-          value={!!config.mtpEnabled}
-          onChange={setMtpEnabled}
-        />
         {(config.sleepModes?.length || 0) > 1 && (
           <SelectEdit
             label="Sleep Mode"
@@ -104,6 +98,12 @@ export function Settings({ config, setConfig }: {
             onChange={setSleepMode}
           />
         )}
+        <ToggleRow
+          label="USB File Transfer"
+          description={config.mtpEnabled ? "Enabled until shutdown" : undefined}
+          value={!!config.mtpEnabled}
+          onChange={setMtpEnabled}
+        />
         <ToggleRow
           label="Automatic ABL Updates"
           description="Updates during shutdown"
