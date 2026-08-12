@@ -107,7 +107,30 @@ env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
 
 printf '[s2idle]\n' >"$WORK/mem_sleep"
 env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
+    ARMADA_MODEL="Retroid Pocket 5" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
+    ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
+    "$ROOT/system_files/usr/libexec/armada/device-env" |
+    grep -x 'ARMADA_SUSPEND_MODE=s2idle' >/dev/null
+
+printf '[deep]\n' >"$WORK/mem_sleep"
+printf 'suspend_mode=s2idle\n' >"$WORK/sleep.conf"
+env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
+    ARMADA_MODEL="Retroid Pocket 5" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
+    ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
+    "$ROOT/system_files/usr/libexec/armada/device-env" |
+    grep -x 'ARMADA_SUSPEND_MODE=deep' >/dev/null
+
+printf '[s2idle]\n' >"$WORK/mem_sleep"
+printf 'suspend_mode=deep\n' >"$WORK/sleep.conf"
+env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
     ARMADA_MODEL="AYN Odin 2" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
+    ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
+    "$ROOT/system_files/usr/libexec/armada/device-env" |
+    grep -x 'ARMADA_SUSPEND_MODE=fake' >/dev/null
+
+: >"$WORK/mem_sleep"
+env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
+    ARMADA_MODEL="Retroid Pocket 5" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
     ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
     "$ROOT/system_files/usr/libexec/armada/device-env" |
     grep -x 'ARMADA_SUSPEND_MODE=fake' >/dev/null
