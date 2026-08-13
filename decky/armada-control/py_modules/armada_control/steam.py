@@ -4,6 +4,54 @@ STEAM_ROOT = Path("/var/home/armada/.local/share/Steam")
 STEAM_APPS_DIR = STEAM_ROOT / "steamapps"
 
 
+def _read_cstring(data, offset):
+    end = data.index(b"\0", offset)
+    return data[offset:end].decode("utf-8", errors="replace"), end + 1
+
+
+def _read_binary_vdf_object(data, offset=0):
+    values = {}
+    while offset < len(data):
+        value_type = data[offset]
+        offset += 1
+        if value_type == 8:
+            return values, offset
+        key, offset = _read_cstring(data, offset)
+        if value_type == 0:
+            value, offset = _read_binary_vdf_object(data, offset)
+        elif value_type == 1:
+            value, offset = _read_cstring(data, offset)
+        elif value_type == 2:
+            if offset + 4 > len(data):
+                raise ValueError("truncated binary VDF integer")
+            value = int.from_bytes(data[offset:offset + 4], "little")
+            offset += 4
+        else:
+            raise ValueError(f"unsupported binary VDF type {value_type}")
+        values[key] = value
+    return values, offset
+
+
+def _shortcut_games():
+    games = []
+    for shortcuts_file in sorted((STEAM_ROOT / "userdata").glob("*/config/shortcuts.vdf")):
+        try:
+            root, _ = _read_binary_vdf_object(shortcuts_file.read_bytes())
+        except (OSError, ValueError):
+            continue
+        shortcuts = root.get("shortcuts", {})
+        if not isinstance(shortcuts, dict):
+            continue
+        for shortcut in shortcuts.values():
+            if not isinstance(shortcut, dict):
+                continue
+            appid = shortcut.get("appid")
+            name = shortcut.get("AppName")
+            if isinstance(appid, int) and appid and isinstance(name, str) and name:
+                games.append({"appid": str(appid), "name": name, "nonSteam": True})
+    return games
+
+
 def installed_games():
     steamapps_dirs = {STEAM_APPS_DIR}
     for library_file in (STEAM_APPS_DIR / "libraryfolders.vdf", STEAM_ROOT / "config/libraryfolders.vdf"):
@@ -33,4 +81,8 @@ def installed_games():
             if appid and name and appid not in seen:
                 games.append({"appid": str(appid), "name": name})
                 seen.add(appid)
+    for game in _shortcut_games():
+        if game["appid"] not in seen:
+            games.append(game)
+            seen.add(game["appid"])
     return sorted(games, key=lambda game: game["name"].casefold())

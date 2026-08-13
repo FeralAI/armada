@@ -10,6 +10,8 @@ export interface CompatState {
 
 type CompatRoute = "windows" | "linux";
 
+const STEAM_SHORTCUT_APP_TYPE = 1073741824;
+
 const apps = () => window.SteamClient?.Apps;
 const settings = () => window.SteamClient?.Settings;
 
@@ -294,12 +296,11 @@ async function applyCompatDefaultForRoute(appid: string, route: CompatRoute | nu
   return true;
 }
 
-// Wraps only a confirmed game (app_type 1), never a tool/runtime. Returns false if the
-// overview/details were still cold, so the caller can retry; true once resolved.
-export async function applyLaunchWrapperToGame(appid: string): Promise<boolean> {
+// Trust allowShortcut only for IDs discovered in shortcuts.vdf; other app types stay untouched.
+export async function applyLaunchWrapperToGame(appid: string, allowShortcut = false): Promise<boolean> {
   const type = await resolveOverviewType(appid);
   if (type === null) return false;
-  if (type !== 1) return true;
+  if (type !== 1 && !(allowShortcut && type === STEAM_SHORTCUT_APP_TYPE)) return true;
   const details = await resolveDetails(appid);
   if (!details) return false;
   const next = wrapLaunchOptions(String(details.strLaunchOptions || ""));
@@ -348,8 +349,9 @@ async function applyWindowsCompatDefault(appid: string): Promise<boolean> {
   return applyCompatDefaultForRoute(appid, route);
 }
 
-async function applyGamePolicy(appid: string): Promise<boolean> {
-  const wrapped = await applyLaunchWrapperToGame(appid);
+async function applyGamePolicy(appid: string, nonSteam = false): Promise<boolean> {
+  const wrapped = await applyLaunchWrapperToGame(appid, nonSteam);
+  if (nonSteam) return wrapped;
   const compat = await applyWindowsCompatDefault(appid);
   return wrapped && compat;
 }
@@ -390,6 +392,10 @@ export async function migrateWindowsCompatTool(appids: string[], oldTool: string
 
 export async function resetCompatToolToDefault(appid: string): Promise<string> {
   const type = await resolveOverviewType(appid);
+  if (type === STEAM_SHORTCUT_APP_TYPE) {
+    await specifyCompatTool(appid, "");
+    return "";
+  }
   if (type !== 1) return "";
   const route = await clearCompatToolAndResolveRoute(appid);
   const applied = await applyCompatDefaultForRoute(appid, route);
@@ -403,6 +409,13 @@ export async function resetAllGamePolicies(appids: string[]): Promise<void> {
     while (next < appids.length) {
       const appid = appids[next++];
       const type = await resolveOverviewType(appid);
+      if (type === STEAM_SHORTCUT_APP_TYPE) {
+        try {
+          await specifyCompatTool(appid, "");
+        } catch (error) {
+        }
+        continue;
+      }
       if (type !== 1) continue;
       await applyCompatDefaultForRoute(appid, await clearCompatToolAndResolveRoute(appid));
       await resetLaunchOptionsForGame(appid);
@@ -421,13 +434,23 @@ export function isGameApp(appid: string): boolean {
   }
 }
 
-export async function resolveGameAppids(appids: string[]): Promise<string[]> {
+export function isNonSteamApp(appid: string): boolean {
+  try {
+    return (window as any).appStore?.GetAppOverviewByAppID?.(Number(appid))?.app_type
+      === STEAM_SHORTCUT_APP_TYPE;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function resolveProfileAppids(appids: string[]): Promise<string[]> {
   const games: string[] = [];
   let next = 0;
   const worker = async () => {
     while (next < appids.length) {
       const appid = appids[next++];
-      if (await resolveOverviewType(appid) === 1) games.push(appid);
+      const type = await resolveOverviewType(appid);
+      if (type === 1 || type === STEAM_SHORTCUT_APP_TYPE) games.push(appid);
     }
   };
   await Promise.all(Array.from({ length: Math.min(10, appids.length) }, worker));
@@ -435,20 +458,23 @@ export async function resolveGameAppids(appids: string[]): Promise<string[]> {
 }
 
 // Manifests include tools/runtimes, so type-check each; cold overviews are retried across rounds, not dropped.
-export async function sweepInstalledGames(appids: string[]): Promise<void> {
-  const installed = new Set(appids);
+export async function sweepInstalledGames(games: Array<{ appid: string; nonSteam?: boolean }>): Promise<void> {
+  const steamAppids = games.filter((game) => !game.nonSteam).map((game) => String(game.appid));
+  const installed = new Set(steamAppids);
   for (const appid of handledAppids) {
     if (!installed.has(appid)) handledAppids.delete(appid);
   }
-  let pending = appids.filter(isGameApp);
+  let pending = games
+    .map((game) => ({ appid: String(game.appid), nonSteam: Boolean(game.nonSteam) }))
+    .filter((game) => game.nonSteam || isGameApp(game.appid));
   for (let round = 0; round < 6 && pending.length; round++) {
     if (round > 0) await delay(5000);
-    const unresolved: string[] = [];
+    const unresolved: typeof pending = [];
     let next = 0;
     const worker = async () => {
       while (next < pending.length) {
-        const appid = pending[next++];
-        if (!(await applyGamePolicy(appid))) unresolved.push(appid);
+        const game = pending[next++];
+        if (!(await applyGamePolicy(game.appid, game.nonSteam))) unresolved.push(game);
       }
     };
     await Promise.all(Array.from({ length: Math.min(10, pending.length) }, worker));

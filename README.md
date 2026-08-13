@@ -47,6 +47,17 @@ Includes:
 | AYANEO Pocket DMG | SM8550 | ✅ Tested |
 | AYANEO Pocket S 2K | SM8550 | ⚪ Untested |
 
+## Experimental devices
+
+| Device | SoC | Status |
+|---|---|---|
+| Retroid Pocket 5 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+| Retroid Pocket Flip 2 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+| Retroid Pocket Mini | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+| Retroid Pocket Mini V2 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+| Retroid Pocket Nova | SM8550 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+| KONKR Pocket FIT Elite | SM8750 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
+
 ## Flash to SD card
 
 Armada boots from SD card. Once it is running, you can optionally install it to
@@ -62,9 +73,9 @@ internal storage so it boots without the card (see
 
    - Insert the SD card, boot into Android, and copy the `rocknix_abl` folder to
      the root of your internal storage.
-   - Identify your SoC from the device table above (`SM8550`, `SM8650`, or
-     `SM8750`). Flashing the wrong SoC's ABL can brick the device, so match it
-     carefully.
+   - Identify your SoC from the device tables above (`SM8250`, `SM8550`,
+     `SM8650`, or `SM8750`). Flashing the wrong SoC's ABL can brick the device,
+     so match it carefully.
    - Using your device's built-in "run script as root" tool, browse to your SoC's
      subfolder (e.g. `rocknix_abl/SM8550`) and run `backup_abl.sh`.
    - Copy the backup (`abl_a.img` and `abl_b.img`, written into your SoC subfolder)

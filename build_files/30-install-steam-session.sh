@@ -8,7 +8,7 @@ dnf5 -y install --setopt=install_weak_deps=False /packages/mesa/mesa-*.fc44.arma
 dnf5 -y install --setopt=install_weak_deps=False /packages/mangohud/mangohud-*.fc44.armada.*.rpm
 
 dnf5 -y install --setopt=install_weak_deps=False \
-    gamescope \
+    /packages/gamescope/terra-gamescope{,-libs}-[0-9]*.aarch64.rpm \
     vulkan-loader \
     vulkan-tools \
     gamemode \
@@ -17,14 +17,13 @@ dnf5 -y install --setopt=install_weak_deps=False \
     xorg-x11-server-Xwayland \
     xorg-x11-server-Xvfb
 
-# armada-gamescope carries ROCKNIX's --use-rotation-shader patch.
-dnf5 -y install --setopt=install_weak_deps=False /packages/gamescope/gamescope-[0-9]*.aarch64.rpm
-
 # Patched InputPlumber: dpad signed-axis fix
 dnf5 -y install --setopt=install_weak_deps=False /packages/inputplumber/inputplumber-*.rpm
 
 # Patched NetworkManager: /etc/NetworkManager/ignore-sleep keeps wifi up across fake-suspend.
 dnf5 -y install --setopt=install_weak_deps=False /packages/networkmanager/*.rpm
+
+dnf5 -y install --setopt=install_weak_deps=False /packages/armada-splash/*.rpm
 
 dnf5 -y install --setopt=install_weak_deps=False /packages/jupiter-hw-support/*.rpm
 
@@ -117,6 +116,8 @@ rm -rf "${PROTON_DIR:?}/${PROTON_TOOL_NAME}"
 mv "${PROTON_DIR}/${PROTON_ARCHIVE_NAME}" "${PROTON_DIR}/${PROTON_TOOL_NAME}"
 # Missing runtime app makes Steam fall back to Proton 10.
 sed -i '/require_tool_appid/d' "${PROTON_DIR}/${PROTON_TOOL_NAME}/toolmanifest.vdf"
+python3 /ctx/build_files/patch-proton-cachyos-dxvk-probe.py \
+    "${PROTON_DIR}/${PROTON_TOOL_NAME}/proton"
 python3 /ctx/build_files/set-steam-default-compat.py "${STEAM_HOME}" "${PROTON_TOOL_NAME}" "${PROTON_DIR}"
 rm -f "/tmp/${PROTON_TAR}" "/tmp/${PROTON_ARCHIVE_NAME}.sha512sum"
 

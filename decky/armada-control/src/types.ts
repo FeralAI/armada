@@ -38,6 +38,7 @@ export interface Tweaks {
 export interface InstalledGame {
   appid: string;
   name: string;
+  nonSteam?: boolean;
 }
 
 export interface FexProfile {
@@ -68,6 +69,14 @@ export interface CalibrationState {
 export interface GameRef {
   appid: string;
   name: string;
+  nonSteam?: boolean;
+}
+
+export interface PerfInfo {
+  governors: string[];
+  schedulers: string[];
+  corePresets: DropdownChoice[];
+  cpuCount: number;
 }
 
 export interface Config {
@@ -76,9 +85,15 @@ export interface Config {
   tweaks: Tweaks;
   installedGames: InstalledGame[];
   fexProfiles: Record<string, FexProfile>;
+  perf?: PerfInfo;
   cpuDeviceClass: string;
   osVersion: string;
+  ablVersion: string;
+  ablAutoEnabled: boolean;
   sshEnabled: boolean;
+  mtpEnabled: boolean;
+  sleepMode: string;
+  sleepModes: DropdownChoice[];
   controllerType: string;
   controllerTypes: DropdownChoice[];
   calibration?: CalibrationState;

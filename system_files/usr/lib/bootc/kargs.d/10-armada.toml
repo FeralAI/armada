@@ -11,8 +11,6 @@ kargs = [
     "fw_devlink.strict=1",
     "pcie_ports=compat",
 
-    "irqaffinity=0-1",
-
     "psi=1",
     "cgroup_disable=pressure",
     "cgroup.memory=nokmem,nosocket",

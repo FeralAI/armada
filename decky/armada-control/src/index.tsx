@@ -29,7 +29,7 @@ export default definePlugin(() => {
       unregisterDownloadWatcher = registerDownloadWatcher(persist);
       window.setTimeout(() => {
         if (cancelled) return;
-        sweepInstalledGames(games.map((game) => game.appid))
+        sweepInstalledGames(games)
           .then(persist)
           .catch(() => {});
       }, 3000);

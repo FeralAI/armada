@@ -11,6 +11,9 @@ import time
 import warnings
 from pathlib import Path
 
+sys.path.insert(0, "/usr/lib/armada")
+import armada_perf
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 BUS_NAME = "org.armada.Power"
@@ -189,6 +192,10 @@ class ArmadaPower:
         self.suspended = False
         self.suspend_save = {}
         self.connection = None
+        self.scx_child = None
+        self.scx_spec = None
+        self.scx_failed = None
+        self.scx_warned = set()
         self.load_config()
         self.profile = self.default_profile
         self.discover()
@@ -200,6 +207,7 @@ class ArmadaPower:
         self.apply_profile()
         if self.gpu_level == "manual" and self.manual_gpu_clock:
             self.set_gpu_manual_clock(self.manual_gpu_clock)
+        self.apply_irq_affinity()
         self.fan_tick()
         GLib.timeout_add_seconds(3, self.fan_tick)
 
@@ -337,7 +345,11 @@ class ArmadaPower:
             "fan_low_pwm": fan_low_pwm,
             "fan_safe_pwm": fan_safe_pwm,
         }
-        return default_profile, underclock_config, fan_curves, profile_config, fan_config, suspend_config
+        system_config = {
+            "irq_cores": parser.get("system", "irq_cores", fallback="auto").strip(),
+        }
+        return (default_profile, underclock_config, fan_curves, profile_config,
+                fan_config, suspend_config, system_config)
 
     def load_config(self):
         try:
@@ -352,6 +364,7 @@ class ArmadaPower:
             self.profile_config,
             self.fan_config,
             self.suspend_config,
+            self.system_config,
         ) = parsed
         self.profile_labels = {p: self.profile_config[p].get("label", p) for p in PROFILES}
 
@@ -372,6 +385,111 @@ class ArmadaPower:
             if (path / "pwm1").exists():
                 return path
         return None
+
+    def irq_mask(self):
+        choice = self.system_config.get("irq_cores", "auto")
+        if choice == "auto":
+            cpulist = self.env.get("ARMADA_IRQ_CORES", "")
+        elif choice == "all":
+            cpulist = ""
+        else:
+            cpulist = choice
+        cpus = None
+        if cpulist:
+            try:
+                cpus = armada_perf.parse_cpulist(cpulist)
+            except ValueError as exc:
+                print(f"armada-powerd: bad irq_cores {cpulist!r}: {exc}", file=sys.stderr)
+        if not cpus:
+            cpus = armada_perf.online_cpus()
+        return sum(1 << c for c in cpus)
+
+    def apply_irq_affinity(self):
+        # runtime replacement for the irqaffinity= karg; chained/per-cpu IRQs
+        # refuse the write, ignored
+        mask = f"{self.irq_mask():x}"
+        try:
+            Path("/proc/irq/default_smp_affinity").write_text(f"{mask}\n")
+        except OSError:
+            pass
+        moved = 0
+        for irq_dir in Path("/proc/irq").iterdir():
+            if not irq_dir.name.isdigit():
+                continue
+            try:
+                (irq_dir / "smp_affinity").write_text(f"{mask}\n")
+                moved += 1
+            except OSError:
+                continue
+        print(f"armada-powerd: irq affinity {mask} ({moved} irqs)", file=sys.stderr)
+
+    def stop_scx(self):
+        if not self.scx_child:
+            return
+        try:
+            self.scx_child.terminate()
+            self.scx_child.wait(timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            try:
+                self.scx_child.kill()
+            except OSError:
+                pass
+        self.scx_child = None
+        self.scx_spec = None
+
+    def enforce_scheduler(self, values):
+        desired = values.get("scheduler", "eevdf")
+        domain = values.get("schedulerDomain") or []
+        if desired == "cosmos" and domain:
+            spec = ("cosmos", armada_perf.format_cpulist(domain))
+        elif desired in ("cosmos", "lavd"):
+            spec = (desired, "")
+        else:
+            spec = None
+        if self.scx_child and self.scx_child.poll() is not None:
+            # sched_ext already fell back to EEVDF when the child died.
+            print(f"armada-powerd: scx {self.scx_spec} exited "
+                  f"{self.scx_child.returncode}", file=sys.stderr)
+            self.scx_failed = (self.scx_spec, time.monotonic() + 60)
+            self.scx_child = None
+            self.scx_spec = None
+        if spec == self.scx_spec:
+            return
+        # stop first: a backed-off request must fall back to EEVDF, never
+        # leave a stale different scx running
+        self.stop_scx()
+        if spec is None:
+            return
+        # backoff only blocks re-trying the same failed spec
+        failed = getattr(self, "scx_failed", None)
+        if failed and failed[0] == spec and time.monotonic() < failed[1]:
+            return
+        binary = f"/usr/bin/scx_{spec[0]}"
+        if not os.path.exists(binary):
+            if binary not in self.scx_warned:
+                self.scx_warned.add(binary)
+                print(f"armada-powerd: {binary} not installed; scheduler "
+                      f"{spec[0]} unavailable", file=sys.stderr)
+            return
+        command = [binary]
+        if spec[0] == "cosmos" and spec[1]:
+            command += ["--primary-domain", spec[1]]
+        try:
+            self.scx_child = subprocess.Popen(
+                command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.scx_spec = spec
+            print(f"armada-powerd: started {' '.join(command)}", file=sys.stderr)
+        except OSError as exc:
+            print(f"armada-powerd: scx start failed: {exc}", file=sys.stderr)
+            self.scx_failed = (spec, time.monotonic() + 60)
+
+    def perf_tick(self):
+        try:
+            values = armada_perf.effective_state(armada_perf.read_state())
+            armada_perf.apply_gamescope(values)
+            self.enforce_scheduler(values)
+        except Exception as exc:
+            print(f"armada-powerd: perf tick failed: {exc}", file=sys.stderr)
 
     def discover_temps(self):
         control = []
@@ -635,6 +753,7 @@ class ArmadaPower:
         return self.fan_config["min_pwm"]
 
     def fan_tick(self):
+        self.perf_tick()
         try:
             if not self.fan_pwm:
                 sd_notify("WATCHDOG=1")
@@ -802,6 +921,7 @@ class ArmadaPower:
                 self.apply_profile()
                 if self.gpu_level == "manual" and self.manual_gpu_clock:
                     self.set_gpu_manual_clock(self.manual_gpu_clock)
+                self.apply_irq_affinity()
             except Exception as exc:
                 print(f"armada-powerd: reload failed: {exc}", file=sys.stderr)
                 invocation.return_dbus_error(f"{BUS_NAME}.Error.ReloadFailed", str(exc))
@@ -849,16 +969,15 @@ class ArmadaPower:
             self.handle_get_property,
             self.handle_set_property,
         )
-        if self.env.get("ARMADA_SUSPEND_MODE", "fake") != "fake":
-            connection.signal_subscribe(
-                LOGIN1_NAME,
-                LOGIN1_IFACE,
-                "PrepareForSleep",
-                LOGIN1_PATH,
-                None,
-                Gio.DBusSignalFlags.NONE,
-                self.handle_prepare_for_sleep,
-            )
+        connection.signal_subscribe(
+            LOGIN1_NAME,
+            LOGIN1_IFACE,
+            "PrepareForSleep",
+            LOGIN1_PATH,
+            None,
+            Gio.DBusSignalFlags.NONE,
+            self.handle_prepare_for_sleep,
+        )
 
     def handle_prepare_for_sleep(
         self, _connection, _sender, _path, _iface, _signal, params
@@ -899,6 +1018,7 @@ def main():
     )
     def stop(_signum, _frame):
         power.fan_safe()
+        power.stop_scx()
         loop.quit()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -907,6 +1027,7 @@ def main():
         loop.run()
     finally:
         power.fan_safe()
+        power.stop_scx()
         Gio.bus_unown_name(owner_id)
 
 

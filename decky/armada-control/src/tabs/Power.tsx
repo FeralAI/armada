@@ -55,6 +55,14 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
       </PanelSection>
       <PanelSection title="PROFILE SETTINGS">
         <SelectEdit label="Fan Curve" value={p.fan_curve} options={fanCurves} onChange={(v) => setProfileValue("fan_curve", v)} />
+        {(config.perf?.governors?.length ?? 0) > 0 ? (
+          <SelectEdit
+            label="CPU Governor"
+            value={p.cpu_governor}
+            options={config.perf!.governors.map((g) => ({ data: g, label: titleCase(g) }))}
+            onChange={(v) => setProfileValue("cpu_governor", v)}
+          />
+        ) : null}
         {supportsUnderclockPresets ? (
           <SelectEdit label="CPU Underclock" value={underclockLevel} options={underclocks} onChange={(v) => setProfileValue("cpu_underclock", v)} />
         ) : (

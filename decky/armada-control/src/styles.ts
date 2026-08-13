@@ -28,6 +28,28 @@ export const styles = `
         min-width: 0 !important;
         max-width: 100% !important;
       }
+      .armada-control-tabs .armada-subheader {
+        text-transform: uppercase;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        opacity: 0.7;
+        margin: 0;
+        padding: 10px 0 2px;
+      }
+      .armada-control-tabs .armada-field-note {
+        box-sizing: border-box;
+        width: 100%;
+        margin-top: -12px;
+        padding: 0 0 6px;
+        font-size: 12px;
+        line-height: 16px;
+        opacity: 0.62;
+      }
+      .armada-control-tabs .armada-advanced-group {
+        margin-left: 6px;
+        padding-left: 6px;
+      }
       .armada-control-tabs .armada-reset-row {
         padding: 0 14px 8px;
       }

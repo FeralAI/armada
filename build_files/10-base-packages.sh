@@ -30,11 +30,13 @@ dnf5 -y install --setopt=install_weak_deps=False \
     sudo \
     rsync \
     curl \
+    git \
     jq \
     htop \
     lsof \
     scx-scheds \
     unzip \
+    fuse \
     evtest \
     dbus-x11 \
     xdg-user-dirs \
@@ -52,7 +54,13 @@ dnf5 -y install --setopt=install_weak_deps=False \
     qt6-qttools \
     qt6-qtvirtualkeyboard \
     zenity \
-    seatd
+    seatd \
+    cage \
+    wlr-randr \
+    distrobox
+
+dnf5 -y install --setopt=install_weak_deps=False \
+    /packages/umtp-responder/umtp-responder-*.rpm
 
 # CachyOS Proton's ARM64 GStreamer asks for Arch's libbz2 soname.
 ln -sf libbz2.so.1 /usr/lib64/libbz2.so.1.0
@@ -93,11 +101,21 @@ dnf5 -y install --setopt=install_weak_deps=False \
     gwenview \
     kwrite
 
+# Patched KWin lets devices pin Plasma's virtual keyboard to a configured output.
+dnf5 -y install --setopt=install_weak_deps=False \
+    /packages/kwin/kwin-[0-9]*.rpm \
+    /packages/kwin/kwin-common-[0-9]*.rpm \
+    /packages/kwin/kwin-libs-[0-9]*.rpm
+
 # PowerDevil's KWin backend treats 0 as safe; reserve 5% for internal panels.
 dnf5 -y install --setopt=install_weak_deps=False /packages/powerdevil/powerdevil-*.fc44.armada.*.rpm
 
 dnf5 -y install --setopt=install_weak_deps=False \
     heroic-games-launcher
+
+# scx_cosmos/scx_lavd for the Armada Control scheduler setting; without the
+# binaries armada-powerd reports the scheduler choice as unavailable.
+dnf5 -y install --setopt=install_weak_deps=False scx-scheds
 
 dnf5 -y install --setopt=install_weak_deps=False \
     --repofrompath 'copr-ublue-os-packages,https://download.copr.fedorainfracloud.org/results/ublue-os/packages/fedora-$releasever-$basearch/' \

@@ -1,23 +1,44 @@
 #!/usr/bin/env python3
+import grp
 import json
 import os
+import selectors
 import shlex
 import socket
+import struct
 import subprocess
+import sys
 import tempfile
+import time
 from pathlib import Path
 
+sys.path.insert(0, "/usr/lib/armada")
+import armada_perf
+
 SOCKET = Path("/run/armada/control.sock")
+SESSION_SOCKET = Path(armada_perf.SESSION_SOCKET)
+ABL_VERSION_TOOL = "/usr/lib/armada/abl-version"
+ABL_CONFIG = Path("/etc/armada/abl.conf")
+ABL_MANIFEST = Path("/usr/lib/armada/abl/manifest")
+ABL_PARTITIONS = (
+    ("A", "/dev/disk/by-partlabel/abl_a"),
+    ("B", "/dev/disk/by-partlabel/abl_b"),
+)
 MAX_REQUEST = 1024 * 1024
 CLIENT_TIMEOUT = 5
 CONTROLLER_TYPES = {"deck-uhid", "xb360", "ds5"}
 INTERCEPT_MODES = {"overlay", "reset"}
+SLEEP_CONFIG = Path("/etc/armada/sleep.conf")
+SUSPEND_MODE_KEY = "suspend_mode"
+NM_IGNORE_SLEEP = Path("/etc/NetworkManager/ignore-sleep")
+MEM_SLEEP_PATH = Path("/sys/power/mem_sleep")
 CONFIG_PATHS = {
     "power": Path("/etc/armada/power-profiles.conf"),
     "tweaks": Path("/etc/armada/game-tweaks.json"),
     "calibration": Path("/etc/armada/input-calibration.json"),
     "compat-applied": Path("/var/lib/armada/compat-applied.json"),
 }
+PERF = None
 CALIBRATION_PARAMS = (
     "axis_leftx_min",
     "axis_leftx_center",
@@ -46,6 +67,10 @@ CALIBRATION_PARAMS = (
     "trigger_right_deadzone",
     "trigger_right_antideadzone",
 )
+CALIBRATION_BACKENDS = {
+    "rsinput": Path("/sys/module/rsinput/parameters"),
+    "retroid": Path("/sys/module/retroid/parameters"),
+}
 
 
 def atomic_write(path, text):
@@ -79,6 +104,67 @@ def ssh_enabled():
     return result.stdout.strip() == "active"
 
 
+def mtp_enabled():
+    result = subprocess.run(
+        ["/usr/bin/systemctl", "is-active", "armada-mtp.service"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        timeout=5,
+    )
+    return result.stdout.strip() == "active"
+
+
+def write_sleep_config(mode):
+    try:
+        lines = SLEEP_CONFIG.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        lines = []
+    output = []
+    written = False
+    for line in lines:
+        key, sep, _value = line.partition("=")
+        if sep and key.strip() == SUSPEND_MODE_KEY:
+            if not written:
+                output.append(f"{SUSPEND_MODE_KEY}={mode}")
+                written = True
+            continue
+        output.append(line)
+    if not written:
+        output.append(f"{SUSPEND_MODE_KEY}={mode}")
+    atomic_write(SLEEP_CONFIG, "\n".join(output) + "\n")
+
+
+def set_networkmanager_sleep_allowed(allow_sleep):
+    if allow_sleep:
+        NM_IGNORE_SLEEP.unlink(missing_ok=True)
+    else:
+        NM_IGNORE_SLEEP.touch()
+
+
+def select_mem_sleep(mode):
+    if mode in {"s2idle", "deep"}:
+        MEM_SLEEP_PATH.write_text(f"{mode}\n", encoding="utf-8")
+
+
+def abl_auto_enabled():
+    for path, key in ((ABL_CONFIG, "auto_update_enabled"), (ABL_MANIFEST, "ARMADA_ABL_AUTO")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        value = ""
+        for line in lines:
+            name, sep, raw = line.partition("=")
+            if sep and name.strip() == key:
+                value = raw.strip()
+                break
+        if value in {"0", "1"}:
+            return value == "1"
+    return False
+
+
 def device_env():
     result = subprocess.check_output(["/usr/libexec/armada/device-env"], text=True, timeout=5)
     env = {}
@@ -91,6 +177,27 @@ def device_env():
         except ValueError:
             env[key] = value
     return env
+
+
+def abl_version():
+    versions = []
+    for name, partition in ABL_PARTITIONS:
+        result = subprocess.run(
+            ["/usr/bin/python3", ABL_VERSION_TOOL, partition],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        )
+        version = result.stdout.strip() if result.returncode == 0 else ""
+        versions.append((name, version))
+    if versions[0][1] == versions[1][1]:
+        return f"ROCKNIX {versions[0][1]}" if versions[0][1] else "Unknown"
+    return ", ".join(
+        f"{name}: ROCKNIX {version}" if version else f"{name}: Unknown"
+        for name, version in versions
+    )
 
 
 def action_set_controller_type(request):
@@ -118,8 +225,62 @@ def action_get_ssh_enabled(request):
     return {"enabled": ssh_enabled()}
 
 
+def action_set_mtp_enabled(request):
+    enabled = bool(request.get("enabled"))
+    action = "start" if enabled else "stop"
+    try:
+        run(["/usr/bin/systemctl", action, "armada-mtp.service"], timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        if enabled:
+            try:
+                run(["/usr/bin/systemctl", "stop", "armada-mtp.service"], timeout=30)
+            except (OSError, subprocess.SubprocessError):
+                pass
+        raise
+    return {"enabled": mtp_enabled()}
+
+
+def action_get_mtp_enabled(request):
+    return {"enabled": mtp_enabled()}
+
+
+def available_sleep_modes():
+    try:
+        advertised = {
+            word.strip("[]")
+            for word in MEM_SLEEP_PATH.read_text(encoding="utf-8", errors="replace").split()
+        }
+    except OSError:
+        advertised = set()
+    return {"fake"} | ({"s2idle", "deep"} & advertised)
+
+
+def action_set_sleep_mode(request):
+    value = str(request.get("value", ""))
+    if value not in available_sleep_modes():
+        raise RuntimeError("sleep mode is not supported on this device")
+
+    select_mem_sleep(value)
+    write_sleep_config(value)
+    set_networkmanager_sleep_allowed(value != "fake")
+    return {"value": value}
+
+
+def action_set_abl_auto_enabled(request):
+    atomic_write(ABL_CONFIG, f"auto_update_enabled={int(bool(request.get('enabled')))}\n")
+    return {"enabled": abl_auto_enabled()}
+
+
+def action_get_abl_auto_enabled(request):
+    return {"enabled": abl_auto_enabled()}
+
+
 def action_get_device_env(request):
     return {"env": device_env()}
+
+
+def action_get_abl_version(request):
+    return {"version": abl_version()}
 
 
 def action_inputplumber_intercept(request):
@@ -139,16 +300,185 @@ def action_write_config(request):
         raise ValueError("config payload too large")
     if name == "calibration":
         params = json.loads(text)
-        rsinput = Path("/sys/module/rsinput/parameters")
-        if not rsinput.exists():
+        if not isinstance(params, dict):
+            raise ValueError("calibration config must be an object")
+        backend = params.get("backend", "rsinput")
+        parameters = CALIBRATION_BACKENDS.get(backend)
+        if parameters is None:
+            raise ValueError("invalid calibration backend")
+        if not parameters.exists():
             raise RuntimeError("controller calibration is not supported on this device")
         for param in CALIBRATION_PARAMS:
             if param in params:
-                (rsinput / param).write_text(str(int(params[param])), encoding="utf-8")
-        (rsinput / "update_params").write_text("1", encoding="utf-8")
+                (parameters / param).write_text(str(int(params[param])), encoding="utf-8")
+        (parameters / "update_params").write_text("1", encoding="utf-8")
     atomic_write(CONFIG_PATHS[name], text)
     if name == "power":
         run(["/usr/bin/armada-power", "reload"], timeout=15)
+    if name == "tweaks":
+        PERF.refresh(keep_override=True)
+    return {"ok": True}
+
+
+class PerfManager:
+    """Owns the perf state file: global defaults, the per-game override,
+    and the pidfd that restores defaults on game exit."""
+
+    def __init__(self, selector):
+        self.selector = selector
+        self.pidfd = None
+        self.pidfd_gen = 0
+        self.env = armada_perf.device_env()
+        state = armada_perf.read_state()
+        override = state.get("override")
+        if isinstance(override, dict) and self.pid_alive(override.get("pid")):
+            self.arm_pidfd(override["pid"])
+            self.refresh(keep_override=True)
+        else:
+            self.refresh()
+
+    def pid_alive(self, pid):
+        return isinstance(pid, int) and os.path.isdir(f"/proc/{pid}")
+
+    def gamescope_layer(self, settings):
+        clean = armada_perf.sanitize_perf(settings, self.env)
+        layer = {}
+        for key in ("gamescopeNice", "gamescopeRr", "gamescopeCores", "scheduler"):
+            if key in clean:
+                layer[key] = clean[key]
+        if clean.get("scheduler") == "cosmos":
+            layer["schedulerDomain"] = clean.get("cores")
+        return layer
+
+    def refresh(self, keep_override=False):
+        # recomputed from game-tweaks.json; powerd applies on its next tick
+        tweaks = armada_perf.load_tweaks()
+        state = {"global": self.gamescope_layer(tweaks.get("global") or {})}
+        if keep_override:
+            old = armada_perf.read_state().get("override")
+            if isinstance(old, dict) and self.pid_alive(old.get("pid")):
+                merged = armada_perf.merged_settings(tweaks, old.get("appid"))
+                override = self.gamescope_layer(merged)
+                override.update({"appid": old.get("appid"), "pid": old["pid"]})
+                state["override"] = override
+        armada_perf.write_state(state)
+
+    def arm_pidfd(self, pid):
+        self.disarm_pidfd()
+        try:
+            self.pidfd = os.pidfd_open(pid, 0)
+        except OSError:
+            return False
+        # generation-stamped: a stale event from the same select() batch must
+        # not clear a later session (fd numbers get reused)
+        self.pidfd_gen += 1
+        generation = self.pidfd_gen
+        self.selector.register(
+            self.pidfd, selectors.EVENT_READ,
+            lambda: self.game_exited(generation))
+        return True
+
+    def disarm_pidfd(self):
+        if self.pidfd is None:
+            return
+        try:
+            self.selector.unregister(self.pidfd)
+        except (KeyError, ValueError):
+            pass
+        try:
+            os.close(self.pidfd)
+        except OSError:
+            pass
+        self.pidfd = None
+
+    def game_exited(self, generation=None):
+        if generation is not None and generation != self.pidfd_gen:
+            return
+        self.disarm_pidfd()
+        self.refresh()
+
+    def steam_session_pid(self, pid, appid):
+        # Steam's reaper (a subreaper tagged SteamLaunch AppId=N) outlives
+        # launcher pid swaps: orphaned game processes reparent to it. The
+        # OUTERMOST tagged ancestor is the session lifetime - inner tagged
+        # wrappers can exit before it.
+        current, match = pid, None
+        for _ in range(32):
+            try:
+                with open(f"/proc/{current}/cmdline", "rb") as f:
+                    argv = f.read().split(b"\0")
+                with open(f"/proc/{current}/stat", encoding="utf-8", errors="replace") as f:
+                    stat = f.read()
+            except OSError:
+                break
+            if b"SteamLaunch" in argv and (
+                    not appid or f"AppId={appid}".encode() in argv):
+                match = current
+            try:
+                ppid = int(stat.rsplit(")", 1)[1].split()[1])
+            except (IndexError, ValueError):
+                break
+            if ppid <= 1:
+                break
+            current = ppid
+        return match if match is not None else pid
+
+    def game_launched(self, appid, pid):
+        tweaks = armada_perf.load_tweaks()
+        merged = armada_perf.merged_settings(tweaks, appid)
+        clean = armada_perf.sanitize_perf(merged, self.env)
+        nice = clean.get("nice", 0)
+        if nice < 0:
+            # pre-exec so the whole tree inherits the boost
+            try:
+                os.setpriority(os.PRIO_PROCESS, pid, nice)
+            except OSError:
+                pass
+        # track every launch: re-apply needs the pid, and a new launch must
+        # displace a stale override
+        session_pid = self.steam_session_pid(pid, appid)
+        override = self.gamescope_layer(merged)
+        override.update({"appid": appid, "pid": session_pid})
+        state = armada_perf.read_state()
+        if self.arm_pidfd(session_pid):
+            state["override"] = override
+            armada_perf.write_state(state)
+        return {"applied": True}
+
+    def reapply(self):
+        # mask + nice are live; env/topology are exec-time only
+        state = armada_perf.read_state()
+        override = state.get("override")
+        if not isinstance(override, dict) or not self.pid_alive(override.get("pid")):
+            raise RuntimeError("no running game to re-apply")
+        tweaks = armada_perf.load_tweaks()
+        clean = armada_perf.sanitize_perf(
+            armada_perf.merged_settings(tweaks, override.get("appid")), self.env)
+        cores = clean.get("cores")
+        if clean.get("scheduler") == "cosmos":
+            cores = None  # composition: cosmos gets the domain, no hard mask
+        nice = clean.get("nice", 0)
+        pids = [override["pid"]] + armada_perf.descendant_pids(override["pid"])
+        for pid in pids:
+            for tid in armada_perf.process_tids(pid):
+                try:
+                    os.setpriority(os.PRIO_PROCESS, tid, nice)
+                    if cores:
+                        os.sched_setaffinity(tid, cores)
+                    else:
+                        os.sched_setaffinity(tid, armada_perf.online_cpus())
+                except OSError:
+                    continue
+        self.refresh(keep_override=True)
+        return {"pids": len(pids)}
+
+
+def action_reapply_perf(request):
+    return PERF.reapply()
+
+
+def action_restart_game_mode(request):
+    run(["/usr/bin/systemctl", "--no-block", "restart", "sddm.service"])
     return {"ok": True}
 
 
@@ -156,26 +486,51 @@ ACTIONS = {
     "set_controller_type": action_set_controller_type,
     "get_controller_type": action_get_controller_type,
     "get_device_env": action_get_device_env,
+    "get_abl_version": action_get_abl_version,
+    "get_abl_auto_enabled": action_get_abl_auto_enabled,
     "get_ssh_enabled": action_get_ssh_enabled,
+    "get_mtp_enabled": action_get_mtp_enabled,
     "inputplumber_intercept": action_inputplumber_intercept,
     "set_ssh_enabled": action_set_ssh_enabled,
+    "set_mtp_enabled": action_set_mtp_enabled,
+    "set_abl_auto_enabled": action_set_abl_auto_enabled,
+    "set_sleep_mode": action_set_sleep_mode,
     "write_config": action_write_config,
+    "reapply_perf": action_reapply_perf,
+    "restart_game_mode": action_restart_game_mode,
 }
 
 
-def handle(request):
-    action = ACTIONS.get(request.get("action"))
-    if action is None:
-        raise ValueError("unknown action")
-    return action(request)
+def handle_session(request, conn):
+    # pid comes from SO_PEERCRED, never the payload: pre-exec the caller IS
+    # the game process (exec preserves the pid)
+    pid, uid, _gid = struct.unpack(
+        "3i", conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
+    if uid == 0:
+        raise ValueError("session socket is for the session user")
+    action = request.get("action")
+    if action == "game_launched":
+        appid = str(request.get("appid", "")) or None
+        if appid is not None and not appid.isdigit():
+            raise ValueError("invalid appid")
+        return PERF.game_launched(appid, pid)
+    if action == "reapply_perf":
+        return PERF.reapply()
+    raise ValueError("unknown action")
 
 
-def serve_client(conn):
+def serve_client(conn, handler):
+    # absolute deadline re-derived per recv: a drip-feeding client must not
+    # hold the event loop (and pidfd restores) past CLIENT_TIMEOUT
     with conn:
-        conn.settimeout(CLIENT_TIMEOUT)
+        deadline = time.monotonic() + CLIENT_TIMEOUT
         try:
             data = b""
             while b"\n" not in data:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError("request timeout")
+                conn.settimeout(remaining)
                 chunk = conn.recv(65536)
                 if not chunk:
                     break
@@ -183,29 +538,62 @@ def serve_client(conn):
                 if len(data) > MAX_REQUEST:
                     raise ValueError("request too large")
             request = json.loads(data.split(b"\n", 1)[0].decode("utf-8"))
-            response = {"ok": True, "result": handle(request)}
+            response = {"ok": True, "result": handler(request, conn)}
         except Exception as exc:
             response = {"ok": False, "error": str(exc)}
         try:
+            conn.settimeout(max(0.5, deadline - time.monotonic()))
             conn.sendall((json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8"))
         except OSError:
             pass
 
 
-def main():
-    SOCKET.parent.mkdir(parents=True, exist_ok=True)
+def bind_socket(path, mode, group=None):
     try:
-        SOCKET.unlink()
+        path.unlink()
     except FileNotFoundError:
         pass
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.bind(str(SOCKET))
-        # Root-only socket; config rendering still belongs to the plugin client.
-        os.chmod(SOCKET, 0o600)
-        sock.listen(8)
-        while True:
-            conn, _ = sock.accept()
-            serve_client(conn)
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.bind(str(path))
+    if group is not None:
+        try:
+            os.chown(path, 0, grp.getgrnam(group).gr_gid)
+        except (KeyError, OSError):
+            pass
+    os.chmod(path, mode)
+    sock.listen(8)
+    return sock
+
+
+def main():
+    global PERF
+    SOCKET.parent.mkdir(parents=True, exist_ok=True)
+    selector = selectors.DefaultSelector()
+    PERF = PerfManager(selector)
+    # Root-only socket; config rendering still belongs to the plugin client.
+    control = bind_socket(SOCKET, 0o600)
+    session = bind_socket(SESSION_SOCKET, 0o660, group="armada")
+
+    def accept_control():
+        conn, _ = control.accept()
+        serve_client(conn, lambda request, _conn: handle(request))
+
+    def accept_session():
+        conn, _ = session.accept()
+        serve_client(conn, handle_session)
+
+    selector.register(control, selectors.EVENT_READ, accept_control)
+    selector.register(session, selectors.EVENT_READ, accept_session)
+    while True:
+        for key, _events in selector.select():
+            key.data()
+
+
+def handle(request):
+    action = ACTIONS.get(request.get("action"))
+    if action is None:
+        raise ValueError("unknown action")
+    return action(request)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import { Router } from "@decky/ui";
-import { isGameApp } from "./steamCompat";
+import { isGameApp, isNonSteamApp } from "./steamCompat";
 import type { Config, DropdownChoice, GameRef } from "../types";
 
 export function gameDisplayName(game: GameRef | null | undefined): string {
@@ -10,8 +10,12 @@ export function gameDisplayName(game: GameRef | null | undefined): string {
 export function availableGames(config: Config): GameRef[] {
   const games = new Map<string, GameRef>();
   for (const game of config.installedGames || []) {
-    if (game?.appid && isGameApp(game.appid)) {
-      games.set(String(game.appid), { appid: String(game.appid), name: game.name || `App ${game.appid}` });
+    if (game?.appid && (game.nonSteam || isGameApp(game.appid))) {
+      games.set(String(game.appid), {
+        appid: String(game.appid),
+        name: game.name || `App ${game.appid}`,
+        nonSteam: Boolean(game.nonSteam),
+      });
     }
   }
   return Array.from(games.values()).sort((a, b) => gameDisplayName(a).localeCompare(gameDisplayName(b)));
@@ -35,5 +39,5 @@ export function currentGame(): GameRef | null {
     name = details?.strDisplayName || details?.strName || details?.name || name;
   } catch (error) {
   }
-  return { appid: id, name: name || `App ${id}` };
+  return { appid: id, name: name || `App ${id}`, nonSteam: isNonSteamApp(id) };
 }

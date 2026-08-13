@@ -11,7 +11,14 @@ from armada_control.config import build_config
 from armada_control.controller import set_controller_type
 from armada_control.power import save_power_config
 from armada_control.steam import installed_games
-from armada_control.system import set_ssh_enabled
+from armada_control.system import (
+    reapply_perf,
+    restart_game_mode,
+    set_abl_auto_enabled,
+    set_mtp_enabled,
+    set_sleep_mode,
+    set_ssh_enabled,
+)
 from armada_control.tweaks import load_compat_applied, save_compat_applied, save_tweaks
 
 
@@ -39,6 +46,21 @@ class Plugin:
 
     async def set_ssh_enabled(self, enabled):
         return await asyncio.to_thread(set_ssh_enabled, enabled)
+
+    async def set_mtp_enabled(self, enabled):
+        return await asyncio.to_thread(set_mtp_enabled, enabled)
+
+    async def set_abl_auto_enabled(self, enabled):
+        return await asyncio.to_thread(set_abl_auto_enabled, enabled)
+
+    async def set_sleep_mode(self, value):
+        return await asyncio.to_thread(set_sleep_mode, value)
+
+    async def reapply_perf(self):
+        return await asyncio.to_thread(reapply_perf)
+
+    async def restart_game_mode(self):
+        return await asyncio.to_thread(restart_game_mode)
 
     async def set_controller_type(self, value):
         return await asyncio.to_thread(set_controller_type, value)

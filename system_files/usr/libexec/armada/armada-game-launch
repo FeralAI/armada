@@ -6,11 +6,16 @@ import json
 import os
 import pathlib
 import shutil
+import socket
 import sys
 import time
 
+sys.path.insert(0, "/usr/lib/armada")
+import armada_perf
+
 
 BASE_FEX_CONFIG = pathlib.Path("/usr/share/fex-emu/Config.json")
+FEX_ROOTFS_DIR = BASE_FEX_CONFIG.parent / "RootFS"
 TWEAKS_CONFIG = pathlib.Path("/etc/armada/game-tweaks.json")
 FEX_PROFILES_CONFIG = pathlib.Path("/usr/share/armada/fex-profiles.json")
 PROTON_INJECT_SRC = pathlib.Path("/usr/share/armada/proton-inject/x86_64-linux-gnu")
@@ -52,16 +57,6 @@ def load_tweaks(defaults):
     return data
 
 
-def merged_settings(tweaks, game_id):
-    settings = dict(tweaks.get("global", {}))
-    if game_id:
-        game_settings = tweaks.get("games", {}).get(str(game_id))
-        # Legacy configs may carry enabled: false; skip those, apply the rest.
-        if isinstance(game_settings, dict) and game_settings.get("enabled") is not False:
-            settings.update(game_settings)
-    return settings
-
-
 def thunk_settings(settings, modules):
     thunks = settings.get("thunks")
     if not isinstance(thunks, dict):
@@ -89,6 +84,12 @@ def resolve_fex_config(settings, profiles):
 def apply_fex(settings, game_id, profiles, env):
     with BASE_FEX_CONFIG.open(encoding="utf-8") as f:
         config = json.load(f)
+
+    # portable FEX doesn't search the system RootFS directory
+    rootfs = config.get("Config", {}).get("RootFS")
+    if isinstance(rootfs, str) and rootfs and not pathlib.Path(rootfs).is_absolute():
+        config["Config"]["RootFS"] = str(FEX_ROOTFS_DIR / rootfs)
+
     allowed = set().union(*(profile["config"].keys() for profile in profiles.values()))
     fex_config = resolve_fex_config(settings, profiles)
     config.setdefault("Config", {}).update({k: v for k, v in fex_config.items() if k in allowed})
@@ -140,6 +141,50 @@ def inject_x86_protocol_libs():
                 shutil.copy2(src, dest)
 
 
+def apply_perf(settings, game_id):
+    # env applies last and verbatim so it can override anything the wrapper
+    # set, including FEX_APP_CONFIG and the derived WINE_CPU_TOPOLOGY
+    clean = armada_perf.sanitize_perf(settings)
+
+    env_extra = settings.get("env")
+    if isinstance(env_extra, dict):
+        for key, value in env_extra.items():
+            if value is None:
+                continue
+            try:
+                os.environ[str(key)] = str(value)
+            except (ValueError, OSError) as exc:
+                # a malformed name must not abort the rest of the launch path
+                print(f"armada-game-launch: bad env entry {key!r}: {exc}", file=sys.stderr)
+
+    cores = clean.get("cores")
+    # affinity is always set explicitly (fork inheritance has no reset guard,
+    # a restrictive gamescope mask would leak in); under cosmos the scheduler
+    # domain replaces the hard mask
+    if cores and clean.get("scheduler") != "cosmos":
+        os.sched_setaffinity(0, cores)
+    else:
+        os.sched_setaffinity(0, armada_perf.online_cpus())
+    if cores and clean.get("wineTopology", True) and "WINE_CPU_TOPOLOGY" not in os.environ:
+        os.environ["WINE_CPU_TOPOLOGY"] = f"{len(cores)}:{','.join(map(str, cores))}"
+
+    nice = clean.get("nice", 0)
+    if nice > 0:
+        os.setpriority(os.PRIO_PROCESS, 0, nice)
+
+    # the daemon applies negative nice, gamescope overrides and the
+    # scheduler; exec preserves the pid so SO_PEERCRED IS the game
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            sock.settimeout(3)
+            sock.connect(armada_perf.SESSION_SOCKET)
+            request = {"action": "game_launched", "appid": game_id or ""}
+            sock.sendall((json.dumps(request) + "\n").encode("utf-8"))
+            sock.recv(4096)
+    except OSError as exc:
+        print(f"armada-game-launch: session daemon unavailable: {exc}", file=sys.stderr)
+
+
 def repair_wedged_controller():
     # x86 Proton can leave the pad registered as a bare USB device, never promoted to
     # WINEXINPUT (dead under x86 too); an arm64ec Proton reusing that prefix then can't
@@ -184,12 +229,18 @@ def main():
     os.environ.setdefault("DXVK_HUD", "none")
 
     game_id = appid()
+    settings = {}
     try:
         contract = load_fex_contract()
-        settings = merged_settings(load_tweaks(contract["defaults"]), game_id)
+        settings = armada_perf.merged_settings(load_tweaks(contract["defaults"]), game_id)
         apply_fex(settings, game_id, contract["profiles"], os.environ)
     except Exception as exc:
         print(f"armada-game-launch: failed to apply settings: {exc}", file=sys.stderr)
+
+    try:
+        apply_perf(settings, game_id)
+    except Exception as exc:
+        print(f"armada-game-launch: perf settings skipped: {exc}", file=sys.stderr)
 
     try:
         inject_x86_protocol_libs()

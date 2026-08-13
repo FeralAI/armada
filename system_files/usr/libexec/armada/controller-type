@@ -19,6 +19,8 @@ ARMADA_PROFILE_NAMES = {
     "AYANEO Layout",
     "AYANEO Standard Layout",
     "AYN Layout",
+    "AYN Thor Layout",
+    "KONKR Pocket FIT Elite",
     "Retroid Layout",
 }
 
