@@ -4,7 +4,6 @@
       "thunks": {
         "Vulkan": true,
         "GL": true,
-        "EGL": true,
         "drm": true,
         "WaylandClient": true,
         "asound": true
