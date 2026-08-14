@@ -52,6 +52,9 @@ ARCH_ROOTFS_URL="https://rootfs.fex-emu.gg/ArchLinux/2026-08-11/ArchLinux.sqsh"
 ARCH_ROOTFS_SHA256="5d0c1a38590c68e5c2597c2c8a26d2f80170b1b738c857d63e1cdadada5f5f2a"
 curl --retry 3 --retry-delay 2 -fsSL -o /usr/share/fex-emu/RootFS/ArchLinux.sqsh "${ARCH_ROOTFS_URL}"
 echo "${ARCH_ROOTFS_SHA256}  /usr/share/fex-emu/RootFS/ArchLinux.sqsh" | sha256sum -c -
+# Steam's FEX compat tool needs the manifest the rootfs ships; a bump to a
+# rootfs without one would otherwise fail only at x86 game launch.
+unsquashfs -cat /usr/share/fex-emu/RootFS/ArchLinux.sqsh graphics_provider.json | python3 -m json.tool >/dev/null
 
 # Mountpoint for the rootfs at the path Steam's FEX compat tool hardcodes
 # for the x86 Proton chain; armada-guestos.service fills it at boot.
