@@ -206,6 +206,8 @@ check("device-env SM8550 irq littles", thor.get("ARMADA_IRQ_CORES") == "0-2")
 thor_override = run_device_env("AYN Thor", {"ARMADA_IRQ_CORES": ""})
 check("device-env explicit-empty override honored",
       thor_override.get("ARMADA_IRQ_CORES") == "''")
+pocket_ds = run_device_env("AYANEO Pocket DS")
+check("device-env Pocket DS enables sync PM", pocket_ds.get("ARMADA_PM_SYNC") == "1")
 
 # --- armada-powerd: config parsing ------------------------------------------
 powerd = load_script("armada-powerd")
