@@ -11,8 +11,9 @@ mkdir -p /usr/share/armada/guestos-x86-mesa
 cp -a /packages/mesa-x86/guestos-x86-mesa/usr /usr/share/armada/guestos-x86-mesa/
 
 # Status text font for armada-splash (falls back to its embedded bitmap font
-# if this link dangles).
-splash_font="$(rpm -ql google-noto-sans-vf-fonts | grep -m1 '\.ttf$')"
+# if this link dangles). Static face: stb_truetype renders a VF's default
+# instance only. Exact name: condensed faces sort first.
+splash_font="$(rpm -ql google-noto-sans-mono-fonts | grep -m1 '/NotoSansMono-SemiBold\.ttf$')"
 [ -n "${splash_font}" ]
 ln -sf "${splash_font}" /usr/share/armada/splash/font.ttf
 

@@ -78,7 +78,8 @@ dnf5 -y install --setopt=install_weak_deps=False \
     google-noto-sans-arabic-vf-fonts \
     google-noto-sans-hebrew-vf-fonts \
     google-noto-sans-devanagari-vf-fonts \
-    google-noto-color-emoji-fonts
+    google-noto-color-emoji-fonts \
+    google-noto-sans-mono-fonts
 
 dnf5 -y install --setopt=install_weak_deps=False \
     plasma-workspace \
