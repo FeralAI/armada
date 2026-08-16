@@ -60,22 +60,28 @@ PY
 # ES-DE's custom files are XML that ES-DE parses at startup; malformed ones
 # are silently ignored and every custom emulator disappears.
 python3 - "$STORE" <<'PY'
-import sys, pathlib, xml.etree.ElementTree as ET
+import sys, pathlib, re, xml.etree.ElementTree as ET
 store = pathlib.Path(sys.argv[1])
 rules = ET.parse(store / "templates/es-de/es_find_rules.xml").getroot()
 names = {e.get("name") for e in rules.findall("emulator")}
-# ARMSX2 is the only emulator bundled ES-DE cannot find on its own.
-assert names == {"ARMSX2"}, names
+# The emulators the store installs that ES-DE's linuxarm rules cannot find.
+assert names == {"ARMSX2", "CEMU", "PICO-8_64", "VITA3K", "XENIAEDGE"}, names
 # Every entry here REPLACES the bundled one and takes its extensions and
 # alternative launch commands with it, so it must carry ES-DE's whole entry.
 systems = ET.parse(store / "templates/es-de/es_systems.xml").getroot()
-# Cemu needs no entry: ES-DE's own CEMU rule already finds ~/Applications.
-assert {s.findtext("name") for s in systems.findall("system")} == {"ps2"}
+assert {s.findtext("name") for s in systems.findall("system")} == {
+    "pico8", "ps2", "psvita", "scummvm", "wiiu", "xbox360"}
 ps2 = next(s for s in systems.findall("system") if s.findtext("name") == "ps2")
 assert {c.get("label") for c in ps2.findall("command")} == {
-    "ARMSX2", "LRPS2", "PCSX2", "PCSX2 (Standalone)", "PCSX2 Legacy (Standalone)",
-    "Play! (Standalone)", "Shortcut or script"}
+    "ARMSX2", "LRPS2", "Shortcut or script"}
 assert ".desktop" in (ps2.findtext("extension") or "").split()
+# A system whose emulator is unreachable is worse than no override at all.
+BUNDLED = {"RETROARCH", "OS-SHELL", "PICO-8", "SCUMMVM", "DREAMM"}
+for system in systems.findall("system"):
+    for command in system.findall("command"):
+        for used in re.findall(r"%EMULATOR_([A-Z0-9_.!-]+)%", command.text or ""):
+            assert used in names | BUNDLED, (system.findtext("name"), used)
+    assert system.findtext("platform"), system.findtext("name")
 print("es-de templates: %d rules, %d systems" % (len(names), len(systems.findall("system"))))
 PY
 
