@@ -274,7 +274,7 @@ PY
 # Every app that changed packaging must declare the ref it displaces, or an
 # existing install is stranded with no way to remove it from the Store.
 python3 - "$STORE" <<'PY'
-import sys, pathlib, json
+import sys, pathlib, json, tempfile
 store = pathlib.Path(sys.argv[1])
 sys.path.insert(0, str(store / "py_modules"))
 from armada_store import catalog
@@ -298,13 +298,23 @@ for app in apps:
         assert install.get("releases"), "%s has no release feed" % app["id"]
         assert install.get("asset"), "%s has no asset pattern" % app["id"]
 
-# Armada Control wraps these as "armada-game-launch %command% <options>", so a
-# flag here reaches the app; for flatpaks it must stay after the run target.
+for app in apps:
+    spec = catalog.launch_spec(app)
+    if spec:
+        options = spec["launchOptions"]
+        assert catalog.LAUNCH_WRAPPER in options, (app["id"], options)
+        assert options.count(catalog.LAUNCH_WRAPPER) == 1, (app["id"], options)
+
 heroic = catalog.launch_spec(next(a for a in apps if a["id"] == "heroic"))
-assert heroic["launchOptions"] == "--no-sandbox", heroic
+assert heroic["launchOptions"] == catalog.DEFAULT_LAUNCH_OPTIONS + " --no-sandbox", heroic
 flat = catalog.launch_spec({"name": "x", "install": {
     "type": "flatpak", "ref": "org.example.App", "launchOptions": "--foo"}})
-assert flat["launchOptions"] == "run org.example.App --foo", flat
+assert flat["launchOptions"] == catalog.DEFAULT_LAUNCH_OPTIONS + " run org.example.App --foo", flat
+assert catalog.wrap_launch_options("%command% --foo") == catalog.DEFAULT_LAUNCH_OPTIONS + " --foo"
+assert catalog.wrap_launch_options(catalog.DEFAULT_LAUNCH_OPTIONS) == catalog.DEFAULT_LAUNCH_OPTIONS
+with tempfile.NamedTemporaryFile() as custom:
+    prepared = catalog.prepare_shortcut(custom.name)
+assert prepared["launchOptions"] == catalog.DEFAULT_LAUNCH_OPTIONS, prepared
 
 duck = next(a for a in apps if a["id"] == "duckstation")
 assert catalog.present_conflicts(duck, set()) == [], "conflict reported while absent"
