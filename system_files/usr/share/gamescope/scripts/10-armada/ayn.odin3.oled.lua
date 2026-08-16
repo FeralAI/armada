@@ -1,4 +1,4 @@
--- AYN Odin 3 internal OLED. The panel exposes no EDID, so gamescope
+-- AYN Odin 3 and Thor top internal OLED. The panel exposes no EDID, so gamescope
 -- synthesizes one and identifies the display through
 -- GAMESCOPE_INTERNAL_DEVICE_ID; this profile supplies the panel's
 -- colorimetry and HDR capability. Refresh rates come from the kernel
@@ -19,7 +19,8 @@ gamescope.config.known_displays.armada_ayn_odin3_oled = {
         min_content_light_level = 0.002,
     },
     matches = function(display)
-        if display.device_id == "ayn-odin-3" and display.internal and not display.has_edid then
+        if (display.device_id == "ayn-odin-3" or display.device_id == "ayn-thor")
+            and display.internal and not display.has_edid then
             return 6000
         end
         return -1
