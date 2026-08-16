@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+LIST_FILE="${ARMADA_FLATPAK_DEFAULTS_FILE:-/usr/share/armada/flatpak/defaults.refs}"
+
+if [[ ! -s "${LIST_FILE}" ]]; then
+    exit 0
+fi
+
+flatpak config --system --set languages "*"
+
+while IFS= read -r ref; do
+    [[ -n "${ref}" ]] || continue
+    flatpak install --system -y --noninteractive flathub "${ref}"
+done < "${LIST_FILE}"
+
+if grep -qx "app/org.mozilla.firefox/aarch64/stable" "${LIST_FILE}"; then
+    flatpak override --system --env=MOZ_USE_XINPUT2=1 org.mozilla.firefox
+fi

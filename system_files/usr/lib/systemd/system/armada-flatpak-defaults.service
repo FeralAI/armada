@@ -1,0 +1,15 @@
+[Unit]
+Description=Install Armada default Flatpaks
+CoditionPathExists=!/var/lib/flatpak/.armarmada-flatpaks-installed
+Wants=network-online.target
+After=network-online.target armada-flatpak-setup.service
+Requires=network-online.target armada-flatpak-setup.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/armada/armada-flatpak-defaults
+ExecStartPost=/usr/bin/touch /var/lib/flatpak/.armada-flatpaks-installed
+
+[Install]
+WantedBy=multi-user.target

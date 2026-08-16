@@ -3,7 +3,7 @@ set -euxo pipefail
 
 RAW_IMAGE="${1:-output/image/disk.raw}"
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-REFS_FILE="${REFS_FILE:-${REPO_ROOT}/flatpak/defaults.refs}"
+REFS_FILE="${REFS_FILE:-${REPO_ROOT}/system_files/usr/share/armada/flatpak/defaults.refs}"
 FEDORA_IMAGE="${FEDORA_IMAGE:-quay.io/fedora/fedora:44}"
 
 [[ -f "${RAW_IMAGE}" ]] || { echo "ERROR: raw image not found: ${RAW_IMAGE}" >&2; exit 1; }
