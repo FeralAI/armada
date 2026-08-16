@@ -44,6 +44,7 @@ import importlib.machinery
 import importlib.util
 import json
 import os
+import pathlib
 import selectors
 import subprocess
 import sys
@@ -137,8 +138,37 @@ check("env tombstone removes global var", "A" not in merged_env)
 check("env global-only view intact", ap.merged_settings(env_tweaks, None)["env"] == {"A": "1", "B": "2"})
 
 # --- armada-game-launch: FEX path unchanged by perf keys --------------------
-os.environ["XDG_RUNTIME_DIR"] = WORK
+os.environ["XDG_CACHE_HOME"] = WORK
 launch = load_script("armada-game-launch")
+with open(os.path.join(LIBEXEC, "armada-game-launch"), "rb") as f:
+    check("wrapper interpreter is PATH-independent", f.readline() == b"#!/usr/bin/python3\n")
+
+appimage = pathlib.Path(WORK) / "test.AppImage"
+appimage.write_bytes(b"\x7fELF" + b"\0" * 4 + b"AI\x02")
+not_appimage = pathlib.Path(WORK) / "not-an-appimage"
+not_appimage.write_bytes(b"#!/bin/sh\n")
+fifo = pathlib.Path(WORK) / "argv-fifo"
+os.mkfifo(fifo)
+check("non-regular argv rejected", not launch.is_appimage(str(fifo)))
+saved_path = os.environ.get("PATH")
+try:
+    os.environ["PATH"] = "/steam/runtime/bin"
+    launch.prepare_appimage_path(["/steam-launch-wrapper", "--", str(appimage)])
+    check("AppImage command chain gets standard PATH",
+          os.environ["PATH"] == "/steam/runtime/bin:/usr/local/bin:/usr/bin:/bin")
+    os.environ["PATH"] = "/steam/runtime/bin"
+    launch.prepare_appimage_path(["/steam-launch-wrapper", "--", str(not_appimage)])
+    check("non-AppImage PATH unchanged", os.environ["PATH"] == "/steam/runtime/bin")
+    os.environ["PATH"] = "/usr/bin:/steam/runtime/bin:/bin"
+    launch.prepare_appimage_path([str(appimage)])
+    check("existing PATH order preserved",
+          os.environ["PATH"] == "/usr/bin:/steam/runtime/bin:/bin:/usr/local/bin")
+finally:
+    if saved_path is None:
+        os.environ.pop("PATH", None)
+    else:
+        os.environ["PATH"] = saved_path
+
 base_fex = os.path.join(WORK, "base-fex.json")
 with open(base_fex, "w") as f:
     json.dump({"Config": {"TSOEnabled": "1"}, "ThunksDB": {"Vulkan": 1, "GL": 1}}, f)
@@ -150,13 +180,14 @@ def fex_result(settings):
     env = {}
     launch.apply_fex(settings, "620", profiles, env)
     with open(env["FEX_APP_CONFIG"]) as f:
-        return json.load(f)
+        return env["FEX_APP_CONFIG"], json.load(f)
 
 
-plain = fex_result({"fexProfile": "default"})
-with_perf = fex_result({"fexProfile": "default", "cores": "big", "nice": -5,
-                        "gamescopeRr": True, "scheduler": "lavd",
-                        "env": {"X": "1"}, "wineTopology": False})
+config_path, plain = fex_result({"fexProfile": "default"})
+check("config lands in test cache dir", config_path.startswith(WORK + "/armada-fex/"))
+_, with_perf = fex_result({"fexProfile": "default", "cores": "big", "nice": -5,
+                           "gamescopeRr": True, "scheduler": "lavd",
+                           "env": {"X": "1"}, "wineTopology": False})
 check("FEX config unaffected by perf keys", plain == with_perf)
 check("FEX config content sane", plain["Config"]["Multiblock"] == "0")
 
@@ -205,6 +236,9 @@ check("device-env SM8550 irq littles", thor.get("ARMADA_IRQ_CORES") == "0-2")
 thor_override = run_device_env("AYN Thor", {"ARMADA_IRQ_CORES": ""})
 check("device-env explicit-empty override honored",
       thor_override.get("ARMADA_IRQ_CORES") == "''")
+pocket_ds = run_device_env("AYANEO Pocket DS")
+check("device-env Pocket DS enables sync suspend",
+      pocket_ds.get("ARMADA_SYNC_SUSPEND") == "1")
 
 # --- armada-powerd: config parsing ------------------------------------------
 powerd = load_script("armada-powerd")
