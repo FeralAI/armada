@@ -138,6 +138,34 @@ def _clean_output(raw):
     return lines[-1] if lines else ""
 
 
+# The session bus caches activatable services and never rescans on its own, and
+# it refuses root, so the rescan has to be asked for as the desktop user.
+def _reload_user_bus():
+    ids = paths.user_ids()
+    if not ids:
+        return
+    uid, gid = ids
+    runtime = "/run/user/{}".format(uid)
+    bus = runtime + "/bus"
+    if not os.path.exists(bus):
+        return
+    try:
+        result = subprocess.run(
+            ["busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+             "org.freedesktop.DBus", "ReloadConfig"],
+            env=clean_env({"XDG_RUNTIME_DIR": runtime,
+                           "DBUS_SESSION_BUS_ADDRESS": "unix:path=" + bus}),
+            user=uid, group=gid, extra_groups=[], timeout=10, capture_output=True,
+        )
+    except Exception as error:
+        # Non-fatal: the caller still has post-install work to finish.
+        print("armada-store: bus reload failed: {}".format(error))
+        return
+    if result.returncode != 0:
+        print("armada-store: bus reload failed: {}".format(
+            _clean_output(result.stderr or result.stdout)))
+
+
 def _run_flatpak(args, cancel, on_percent):
     # flatpak renders progress only on a sized tty with TERM set, and
     # --noninteractive suppresses it entirely; -y alone keeps this unattended.
@@ -184,6 +212,9 @@ def _run_flatpak(args, cancel, on_percent):
             except subprocess.TimeoutExpired:
                 proc.kill()
         proc.wait()
+        # In the finally and regardless of exit code: "already installed",
+        # "not installed" and a late cancel all still need the rescan.
+        _reload_user_bus()
     return proc.returncode, output
 
 
