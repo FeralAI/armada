@@ -33,30 +33,25 @@ Includes:
 
 | Device | SoC | Status |
 |---|---|---|
-| AYANEO Pocket EVO | SM8550 | ✅ Tested |
 | AYN Odin 2 Portal | SM8550 | ✅ Tested |
 | AYN Odin 2 Mini | SM8550 | ✅ Tested |
 | AYN Odin 2 | SM8550 | ✅ Tested |
 | AYN Thor | SM8550 | ✅ Tested |
 | AYN Odin 3 | SM8750 | ✅ Tested |
+| Retroid Pocket 5 | SM8250 | ✅ Tested |
+| Retroid Pocket Flip 2 | SM8250 | ✅ Tested |
+| Retroid Pocket Mini | SM8250 | ⚪ Untested |
+| Retroid Pocket Mini V2 | SM8250 | ⚪ Untested |
 | Retroid Pocket 6 | SM8550 | ✅ Tested |
+| Retroid Pocket Nova | SM8550 | ✅ Tested |
+| KONKR Pocket FIT (8 Elite) | SM8750 | ✅ Tested |
 | KONKR Pocket FIT (G3 Gen 3) | SM8650 | ✅ Tested |
 | AYANEO Pocket S2 | SM8650 | ✅ Tested |
+| AYANEO Pocket EVO | SM8550 | ✅ Tested |
 | AYANEO Pocket ACE | SM8550 | ✅ Tested |
 | AYANEO Pocket DS | SM8550 | ✅ Tested |
 | AYANEO Pocket DMG | SM8550 | ✅ Tested |
 | AYANEO Pocket S 2K | SM8550 | ⚪ Untested |
-
-## Experimental devices
-
-| Device | SoC | Status |
-|---|---|---|
-| Retroid Pocket 5 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
-| Retroid Pocket Flip 2 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
-| Retroid Pocket Mini | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
-| Retroid Pocket Mini V2 | SM8250 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
-| Retroid Pocket Nova | SM8550 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
-| KONKR Pocket FIT Elite | SM8750 | [Pre-release](https://github.com/armada-os/armada/releases/tag/20260806) |
 
 ## Flash to SD card
 
