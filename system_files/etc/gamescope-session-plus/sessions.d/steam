@@ -44,5 +44,5 @@ export STEAM_EXTRA_COMPAT_TOOLS_PATHS="/usr/share/steam/compatibilitytools.d:${H
 # The fallback appid has gamescope show the wrapper's splash window whenever
 # Steam has no window of its own; the splash units check the same kill-switch.
 export GAMESCOPE_FALLBACK_APPID=0x41524d41
-CLIENTCMD='/usr/libexec/armada/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles -noshaders'
+CLIENTCMD='/usr/libexec/armada/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles'
 [[ -e /etc/armada/splash-disabled ]] || CLIENTCMD="/usr/libexec/armada/armada-splash-run ${CLIENTCMD}"
