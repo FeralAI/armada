@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # Game launch-option prefix wrapper ("armada-game-launch %command%"). Applies
 # per-game settings via FEX_APP_CONFIG, the only knob every compat tool's FEX reads
 # (the on-disk FEX config files are seen only by the system FEX, not arm64ec/wow64).
@@ -7,6 +7,7 @@ import os
 import pathlib
 import shutil
 import socket
+import stat
 import sys
 import time
 
@@ -15,10 +16,43 @@ import armada_perf
 
 
 BASE_FEX_CONFIG = pathlib.Path("/usr/share/fex-emu/Config.json")
-FEX_ROOTFS_DIR = BASE_FEX_CONFIG.parent / "RootFS"
 TWEAKS_CONFIG = pathlib.Path("/etc/armada/game-tweaks.json")
 FEX_PROFILES_CONFIG = pathlib.Path("/usr/share/armada/fex-profiles.json")
 PROTON_INJECT_SRC = pathlib.Path("/usr/share/armada/proton-inject/x86_64-linux-gnu")
+APPIMAGE_EXEC_PATHS = ("/usr/local/bin", "/usr/bin", "/bin")
+
+
+def is_appimage(command):
+    try:
+        fd = os.open(command, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError:
+        return False
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return False
+        header = os.read(fd, 11)
+    except OSError:
+        return False
+    finally:
+        os.close(fd)
+
+    return (
+        len(header) == 11
+        and header[:4] == b"\x7fELF"
+        and header[8:10] == b"AI"
+        and header[10] in (1, 2)
+    )
+
+
+def prepare_appimage_path(args):
+    if not any(is_appimage(arg) for arg in args):
+        return
+
+    paths = os.environ.get("PATH", "").split(":") if os.environ.get("PATH") else []
+    for path in APPIMAGE_EXEC_PATHS:
+        if path not in paths:
+            paths.append(path)
+    os.environ["PATH"] = ":".join(paths)
 
 
 def appid():
@@ -64,11 +98,14 @@ def thunk_settings(settings, modules):
     return {name: 1 if thunks.get(name, True) else 0 for name in modules}
 
 
-def runtime_config_dir():
-    runtime = os.environ.get("XDG_RUNTIME_DIR")
-    if runtime:
-        return pathlib.Path(runtime) / "armada-fex"
-    return pathlib.Path("/tmp") / f"armada-fex-{os.getuid()}"
+def fex_config_dir():
+    # pressure-vessel shares this cache path into the container; a runtime-dir
+    # config is invisible there and FEX silently skips an unseen FEX_APP_CONFIG.
+    # Relative XDG_CACHE_HOME (invalid per XDG) would be re-anchored by portable FEX.
+    cache = os.environ.get("XDG_CACHE_HOME")
+    if cache and pathlib.Path(cache).is_absolute():
+        return pathlib.Path(cache) / "armada-fex"
+    return pathlib.Path.home() / ".cache" / "armada-fex"
 
 
 def resolve_fex_config(settings, profiles):
@@ -85,17 +122,17 @@ def apply_fex(settings, game_id, profiles, env):
     with BASE_FEX_CONFIG.open(encoding="utf-8") as f:
         config = json.load(f)
 
-    # portable FEX doesn't search the system RootFS directory
-    rootfs = config.get("Config", {}).get("RootFS")
-    if isinstance(rootfs, str) and rootfs and not pathlib.Path(rootfs).is_absolute():
-        config["Config"]["RootFS"] = str(FEX_ROOTFS_DIR / rootfs)
+    # each FEX resolves rootfs/thunk paths from its own global or template config;
+    # forcing Armada's onto the Steam FEX depot (Proton 11) empties its SLR4 rootfs
+    for key in ("RootFS", "ThunkGuestLibs", "ThunkHostLibs"):
+        config.get("Config", {}).pop(key, None)
 
     allowed = set().union(*(profile["config"].keys() for profile in profiles.values()))
     fex_config = resolve_fex_config(settings, profiles)
     config.setdefault("Config", {}).update({k: v for k, v in fex_config.items() if k in allowed})
     config["ThunksDB"] = thunk_settings(settings, config.get("ThunksDB", {}).keys())
 
-    config_dir = runtime_config_dir()
+    config_dir = fex_config_dir()
     config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     cutoff = time.time() - 86400
     for old in config_dir.glob("*.json"):
@@ -236,6 +273,8 @@ def main():
         apply_fex(settings, game_id, contract["profiles"], os.environ)
     except Exception as exc:
         print(f"armada-game-launch: failed to apply settings: {exc}", file=sys.stderr)
+
+    prepare_appimage_path(args)
 
     try:
         apply_perf(settings, game_id)

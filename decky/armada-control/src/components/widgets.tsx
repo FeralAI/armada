@@ -4,24 +4,25 @@ import type { DropdownChoice } from "../types";
 
 type Option = string | DropdownChoice;
 
-export function SelectEdit({ label, value, options, onChange, labelBelow, disabled, wrapperClassName }: {
+export function SelectEdit({ label, value, options, onChange, labelBelow, disabled, placeholder, wrapperClassName }: {
   label?: ReactNode;
   value: any;
   options: Option[];
   onChange: (data: any) => void;
   labelBelow?: boolean;
   disabled?: boolean;
+  placeholder?: string;
   wrapperClassName?: string;
 }) {
   const rgOptions = options.map((option) => (typeof option === "string" ? { data: option, label: option } : option));
   const dropdown = label === undefined ? (
-    <Dropdown disabled={disabled} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
+    <Dropdown disabled={disabled} strDefaultLabel={placeholder} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
   ) : labelBelow ? (
     <Field label={label} childrenLayout="below" childrenContainerWidth="max" disabled={disabled}>
-      <Dropdown disabled={disabled} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
+      <Dropdown disabled={disabled} strDefaultLabel={placeholder} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
     </Field>
   ) : (
-    <DropdownItemInternal disabled={disabled} childrenContainerWidth="max" label={label} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
+    <DropdownItemInternal disabled={disabled} strDefaultLabel={placeholder} childrenContainerWidth="max" label={label} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
   );
   return (
     <PanelSectionRow>
