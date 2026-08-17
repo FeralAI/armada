@@ -41,6 +41,7 @@ dnf5 -y install --setopt=install_weak_deps=False \
     dbus-x11 \
     xdg-user-dirs \
     xdg-terminal-exec \
+    desktop-file-utils \
     btrfs-progs \
     parted \
     gdisk \
