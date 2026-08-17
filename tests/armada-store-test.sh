@@ -120,98 +120,16 @@ assert "--filesystem=/run/media" in extra, extra
 print("overrides: %d flatpaks, all get /run/media and /media" % count)
 PY
 
-# The plugin is root and the user bus refuses root, so the id drop and the bus
-# address are the whole point of the helper, not incidental detail.
-python3 - "$STORE" <<'PY'
+# dbus-broker only watches service directories that exist when it starts, so
+# the first Flatpak export into a missing one is invisible until the next boot.
+python3 - "$ROOT" <<'PY'
 import sys, pathlib
-store = pathlib.Path(sys.argv[1])
-sys.path.insert(0, str(store / "py_modules"))
-from armada_store import installers
-
-calls = []
-installers.paths.user_ids = lambda: (1000, 1000)
-installers.os.path.exists = lambda p: True
-installers.subprocess.run = lambda argv, **kw: calls.append((argv, kw)) or type(
-    "R", (), {"returncode": 0, "stderr": b"", "stdout": b""})()
-
-installers._reload_user_bus()
-assert len(calls) == 1, calls
-argv, kw = calls[0]
-assert argv[:2] == ["busctl", "--user"], argv
-assert argv[-1] == "ReloadConfig", argv
-assert kw["user"] == 1000 and kw["group"] == 1000, kw
-# user=/group= leave root's supplementary groups in place on their own.
-assert kw["extra_groups"] == [], kw
-assert kw["env"]["XDG_RUNTIME_DIR"] == "/run/user/1000", kw["env"]
-assert kw["env"]["DBUS_SESSION_BUS_ADDRESS"] == "unix:path=/run/user/1000/bus", kw["env"]
-assert kw.get("timeout"), "a hung bus must not hang the job"
-
-# Headless or pre-login: no socket, so no call and no error.
-calls.clear()
-installers.os.path.exists = lambda p: False
-installers._reload_user_bus()
-assert not calls, calls
-
-installers.os.path.exists = lambda p: True
-installers.paths.user_ids = lambda: None
-installers._reload_user_bus()
-assert not calls, calls
-
-# A failing reload must not turn a finished install into a failed job.
-installers.paths.user_ids = lambda: (1000, 1000)
-def boom(*a, **k):
-    raise OSError("no bus")
-installers.subprocess.run = boom
-installers._reload_user_bus()
-
-print("dbus reload: id-dropped, bus-scoped, no-op without a session, non-fatal")
-PY
-
-# "already installed" and "not installed" both exit nonzero, so a reload that
-# only ran on success would skip the two branches most likely to be stale.
-python3 - "$STORE" <<'PY'
-import sys, pathlib, threading
-store = pathlib.Path(sys.argv[1])
-sys.path.insert(0, str(store / "py_modules"))
-from armada_store import installers
-
-seen = []
-installers._reload_user_bus = lambda: seen.append(True)
-
-
-class FakeProc:
-    def __init__(self, code):
-        self.returncode = code
-
-    def poll(self):
-        return self.returncode
-
-    def wait(self, timeout=None):
-        return self.returncode
-
-
-for code in (0, 1):
-    seen.clear()
-    installers.subprocess.Popen = lambda *a, **k: FakeProc(code)
-    rc, _ = installers._run_flatpak(["install", "x"], threading.Event(), lambda p: None)
-    assert rc == code, rc
-    assert seen, "no bus reload after exit %d" % code
-
-# Cancel can be observed after flatpak already committed and exited, so the
-# reload has to survive the exception path too.
-seen.clear()
-cancelled = threading.Event()
-cancelled.set()
-installers.subprocess.Popen = lambda *a, **k: FakeProc(0)
-try:
-    installers._run_flatpak(["install", "x"], cancelled, lambda p: None)
-except installers.Cancelled:
-    pass
-else:
-    raise AssertionError("expected Cancelled")
-assert seen, "no bus reload after cancellation"
-
-print("dbus reload: fires after success, failure and cancellation")
+rule = pathlib.Path(sys.argv[1]) / "system_files/usr/lib/tmpfiles.d/armada-flatpak-dbus.conf"
+assert rule.exists(), "no tmpfiles rule for the flatpak D-Bus service dir"
+lines = [l.strip() for l in rule.read_text().splitlines()
+         if l.strip() and not l.startswith("#")]
+assert lines == ["d /var/lib/flatpak/exports/share/dbus-1/services 0755 root root -"], lines
+print("dbus service dir: created at boot so the bus watches it from the start")
 PY
 
 # Release selection, against the shapes real forges actually return.
