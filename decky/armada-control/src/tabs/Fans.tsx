@@ -10,8 +10,7 @@ import { useFanCurvesSave } from "../hooks/useFanCurvesSave";
 import { clone } from "../lib/util";
 import type { Config, CurvesState } from "../types";
 
-export function Fans({ config, setConfig }: {
-  config: Config;
+export function Fans({ setConfig }: {
   setConfig: Dispatch<SetStateAction<Config | null>>;
 }) {
   const [saved, setSaved] = useState<CurvesState | null>(null);

@@ -89,7 +89,7 @@ export function Content() {
         tabs={[
           { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(<Compatibility config={config} setConfig={setConfig} />) },
           { id: "Power", title: tabIcons.Power, content: tabContent(<Power config={config} setConfig={setConfig} />) },
-          { id: "Fans", title: tabIcons.Fans, content: tabContent(<Fans config={config} setConfig={setConfig} />) },
+          { id: "Fans", title: tabIcons.Fans, content: tabContent(<Fans setConfig={setConfig} />) },
           { id: "Advanced", title: tabIcons.Advanced, content: tabContent(<Settings config={config} setConfig={setConfig} />) },
         ]}
       />

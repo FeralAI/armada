@@ -3,6 +3,21 @@ export interface CurvePoint {
   pwm: number;
 }
 
+export const CURVE_TEMP_MIN = 0;
+export const CURVE_TEMP_MAX = 120;
+export const CURVE_PWM_MIN = 0;
+export const CURVE_PWM_MAX = 255;
+
+export const DEFAULT_POINT: CurvePoint = { temp: 60, pwm: 128 };
+
+export function pwmToPercent(pwm: number): number {
+  return Math.round((Math.min(CURVE_PWM_MAX, Math.max(CURVE_PWM_MIN, pwm)) / CURVE_PWM_MAX) * 100);
+}
+
+export function percentToPwm(percent: number): number {
+  return Math.round((Math.min(100, Math.max(0, percent)) / 100) * CURVE_PWM_MAX);
+}
+
 export function parseCurve(text: string | undefined): CurvePoint[] {
   if (!text) return [];
   return text

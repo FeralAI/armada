@@ -1,4 +1,4 @@
-import { Dropdown, DropdownItemInternal, Field, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { Dropdown, DropdownItemInternal, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import type { ReactNode } from "react";
 import type { DropdownChoice } from "../types";
 

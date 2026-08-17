@@ -2,12 +2,17 @@ import { Focusable, GamepadButton } from "@decky/ui";
 import type { GamepadEvent } from "@decky/ui";
 import { useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import {
+  CURVE_PWM_MAX as PWM_MAX,
+  CURVE_PWM_MIN as PWM_MIN,
+  CURVE_TEMP_MAX as TEMP_MAX,
+  CURVE_TEMP_MIN as TEMP_MIN,
+  percentToPwm,
+  pwmToPercent,
+} from "../lib/fanCurve";
 import type { CurvePoint } from "../lib/fanCurve";
+import { clamp } from "../lib/util";
 
-const TEMP_MIN = 0;
-const TEMP_MAX = 120;
-const PWM_MIN = 0;
-const PWM_MAX = 255;
 const WIDTH = 280;
 const HEIGHT = 170;
 const PAD_LEFT = 26;
@@ -20,18 +25,6 @@ const TEMP_TICKS = [0, 20, 40, 60, 80, 100, 120];
 const PWM_TICK_PERCENTS = [0, 25, 50, 75, 100];
 const CONTROLLER_TEMP_STEP = 1;
 const CONTROLLER_PWM_STEP = 5;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function pwmToPercent(pwm: number) {
-  return Math.round((clamp(pwm, PWM_MIN, PWM_MAX) / PWM_MAX) * 100);
-}
-
-function percentToPwm(percent: number) {
-  return Math.round((clamp(percent, 0, 100) / 100) * PWM_MAX);
-}
 
 function xForTemp(temp: number) {
   return PAD_LEFT + (clamp(temp, TEMP_MIN, TEMP_MAX) - TEMP_MIN) / (TEMP_MAX - TEMP_MIN) * PLOT_W;

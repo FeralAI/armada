@@ -5,12 +5,22 @@ import { AnimatedCollapse } from "./AnimatedCollapse";
 import { NumberEdit, PseudoDropdown, SliderEdit, ToggleEdit } from "./fanWidgets";
 import { FanCurveGraph } from "./FanCurveGraph";
 import { useSelectedFanCurve } from "../hooks/useSelectedFanCurve";
-import { formatCurve, parseCurve } from "../lib/fanCurve";
+import type { SelectedFanCurve } from "../hooks/useSelectedFanCurve";
+import {
+  CURVE_PWM_MAX,
+  CURVE_PWM_MIN,
+  CURVE_TEMP_MAX,
+  CURVE_TEMP_MIN,
+  DEFAULT_POINT,
+  formatCurve,
+  parseCurve,
+  percentToPwm,
+  pwmToPercent,
+} from "../lib/fanCurve";
 import type { CurvePoint } from "../lib/fanCurve";
 import { clamp, clone, titleCase, update } from "../lib/util";
 import type { CurvesState } from "../types";
 
-const DEFAULT_POINT: CurvePoint = { temp: 60, pwm: 128 };
 const DEFAULT_FAN_STOP_TEMP = 60;
 const RAMP_MIN = 1;
 const RAMP_MAX = 255;
@@ -18,7 +28,7 @@ const SMOOTHING_MIN = 0;
 const SMOOTHING_MAX = 99;
 const MIN_FAN_SPEED = 0;
 const MAX_FAN_SPEED = 100;
-const PWM_MAX = 255;
+const FAN_STOP_SPAN = 20;
 
 export function FanCurveEditor({
   state,
@@ -37,8 +47,8 @@ export function FanCurveEditor({
   onOpenCreateCurve?: () => void;
   currentTemp?: number | null;
 }) {
-  const { names, curveName, curve, points, factoryCurve, commitPoints, resetCurve } =
-    useSelectedFanCurve(state, setState, selected);
+  const selectedCurve = useSelectedFanCurve(state, setState, selected);
+  const { names, curveName, curve, points, commitPoints } = selectedCurve;
   const [showPointEditor, setShowPointEditor] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,21 +61,6 @@ export function FanCurveEditor({
     return !Object.values(state.profiles || {}).some((p) => p.fan_curve === name);
   });
   const deleteTargetName = deletableNames.includes(deleteTarget) ? deleteTarget : deletableNames[0] || "";
-
-  const setPoint = (index: number, key: "temp" | "pwm", value: number) => {
-    commitPoints(points.map((point, i) => (i === index ? { ...point, [key]: value } : point)));
-  };
-
-  const removePoint = (index: number) => {
-    commitPoints(points.filter((_, i) => i !== index));
-  };
-
-  const addPoint = () => {
-    const usedTemps = new Set(points.map((point) => point.temp));
-    let temp = DEFAULT_POINT.temp;
-    while (usedTemps.has(temp) && temp < 150) temp += 1;
-    commitPoints([...points, { ...DEFAULT_POINT, temp }]);
-  };
 
   let zeroRunEnd = 0;
   while (zeroRunEnd < points.length && points[zeroRunEnd].pwm === 0) zeroRunEnd += 1;
@@ -83,7 +78,11 @@ export function FanCurveEditor({
     const restorePwm = rest.length ? rest[0].pwm : DEFAULT_POINT.pwm;
     const restored = zeroRun.map((point) => ({ ...point, pwm: restorePwm || DEFAULT_POINT.pwm }));
     if (rest.length) return [...restored, ...rest];
-    return [...restored, { temp: restored[restored.length - 1].temp + 20, pwm: DEFAULT_POINT.pwm }];
+    const lastTemp = restored[restored.length - 1].temp;
+    return [
+      ...restored,
+      { temp: clamp(lastTemp + FAN_STOP_SPAN, lastTemp + 1, CURVE_TEMP_MAX), pwm: DEFAULT_POINT.pwm },
+    ];
   };
 
   const buildFanStopPoints = (temp: number, allPoints: CurvePoint[]): CurvePoint[] => {
@@ -93,7 +92,10 @@ export function FanCurveEditor({
     const zone = hasBoundaryPoint ? zeroed : [...zeroed, { temp, pwm: 0 }];
     if (above.length) return [...zone, ...above];
     const fallbackPwm = allPoints.length ? allPoints[allPoints.length - 1].pwm : DEFAULT_POINT.pwm;
-    return [...zone, { temp: clamp(temp + 20, temp + 1, 120), pwm: fallbackPwm || DEFAULT_POINT.pwm }];
+    return [
+      ...zone,
+      { temp: clamp(temp + FAN_STOP_SPAN, temp + 1, CURVE_TEMP_MAX), pwm: fallbackPwm || DEFAULT_POINT.pwm },
+    ];
   };
 
   const toggleFanStop = (checked: boolean) => {
@@ -101,7 +103,7 @@ export function FanCurveEditor({
     let nextPoints: CurvePoint[];
     if (checked) {
       preFanStopPoints.current = { name: curveName, points };
-      nextPoints = buildFanStopPoints(clamp(DEFAULT_FAN_STOP_TEMP, -40, 120), points);
+      nextPoints = buildFanStopPoints(clamp(DEFAULT_FAN_STOP_TEMP, CURVE_TEMP_MIN, CURVE_TEMP_MAX), points);
     } else {
       const cached = preFanStopPoints.current;
       nextPoints = cached && cached.name === curveName ? cached.points : restoreFanStopPoints(points, zeroRunEnd);
@@ -181,20 +183,11 @@ export function FanCurveEditor({
       {curve ? (
         <PointsPanel
           key={curveName}
-          curveName={curveName}
-          points={points}
-          factoryCurve={factoryCurve}
+          selectedCurve={selectedCurve}
           showPointEditor={showPointEditor}
           onToggleShowPointEditor={() => setShowPointEditor((v) => !v)}
-          commitPoints={commitPoints}
-          setPoint={setPoint}
-          removePoint={removePoint}
-          addPoint={addPoint}
-          resetCurve={resetCurve}
           onOpenFullscreen={onOpenFullscreen}
           currentTemp={currentTemp}
-          minPwm={state.fanSettings.min_pwm}
-          onFixMinPwm={(value) => setFanSetting("min_pwm", value)}
           fanStopEnabled={fanStopEnabled}
           fanStopTemp={fanStopTemp}
           onToggleFanStop={toggleFanStop}
@@ -234,11 +227,11 @@ export function FanCurveEditor({
         </div>
         <SliderEdit
           label="Minimum Fan Speed (%)"
-          value={Math.round((state.fanSettings.min_pwm / PWM_MAX) * 100)}
+          value={pwmToPercent(state.fanSettings.min_pwm)}
           min={MIN_FAN_SPEED}
           max={MAX_FAN_SPEED}
           step={1}
-          onChange={(v) => setFanSetting("min_pwm", Math.round((v / 100) * PWM_MAX))}
+          onChange={(v) => setFanSetting("min_pwm", percentToPwm(v))}
           disabled={anyFanStop}
         />
         <div className="afc-field-note">The lowest speed Armada allows. Fan Stop forces it to 0%.</div>
@@ -291,15 +284,8 @@ export function FanCurveGraphEditor({ state, setState, selected, onSelectedChang
   onSelectedChange: (value: string) => void;
   currentTemp?: number | null;
 }) {
-  const { names, curveName, curve, points, factoryCurve, commitPoints, resetCurve } =
+  const { names, curveName, curve, points, factoryCurve, commitPoints, resetCurve, belowMinPoint, fixMinPwm } =
     useSelectedFanCurve(state, setState, selected);
-  const belowMinPoint = points.some((point) => point.pwm < state.fanSettings.min_pwm);
-
-  const fixMinPwm = () => {
-    if (!points.length) return;
-    const lowestPwm = clamp(Math.min(...points.map((point) => point.pwm)), 0, PWM_MAX);
-    setState((current) => (current ? update(current, ["fanSettings", "min_pwm"], lowestPwm) : current));
-  };
 
   return (
     <>
@@ -361,44 +347,38 @@ function MinPwmWarningButton({ onFix, visible }: { onFix: () => void; visible: b
 }
 
 function PointsPanel({
-  curveName,
-  points,
-  factoryCurve,
+  selectedCurve,
   showPointEditor,
   onToggleShowPointEditor,
-  commitPoints,
-  setPoint,
-  removePoint,
-  addPoint,
-  resetCurve,
   onOpenFullscreen,
   currentTemp,
-  minPwm,
-  onFixMinPwm,
   fanStopEnabled,
   fanStopTemp,
   onToggleFanStop,
   onFanStopTempChange,
 }: {
-  curveName: string;
-  points: CurvePoint[];
-  factoryCurve: { label: string; curve: string } | undefined;
+  selectedCurve: SelectedFanCurve;
   showPointEditor: boolean;
   onToggleShowPointEditor: () => void;
-  commitPoints: (next: CurvePoint[]) => void;
-  setPoint: (index: number, key: "temp" | "pwm", value: number) => void;
-  removePoint: (index: number) => void;
-  addPoint: () => void;
-  resetCurve: () => void;
   onOpenFullscreen?: () => void;
   currentTemp?: number | null;
-  minPwm: number;
-  onFixMinPwm: (value: number) => void;
   fanStopEnabled: boolean;
   fanStopTemp: number;
   onToggleFanStop: (checked: boolean) => void;
   onFanStopTempChange: (value: number) => void;
 }) {
+  const {
+    curveName,
+    points,
+    factoryCurve,
+    commitPoints,
+    resetCurve,
+    setPoint,
+    removePoint,
+    addPoint,
+    belowMinPoint,
+    fixMinPwm,
+  } = selectedCurve;
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const toggleExpanded = (index: number) => {
@@ -423,12 +403,6 @@ function PointsPanel({
     removePoint(index);
   };
 
-  const belowMinPoint = points.some((point) => point.pwm < minPwm);
-  const fixMinPwm = () => {
-    if (!points.length) return;
-    onFixMinPwm(clamp(Math.min(...points.map((point) => point.pwm)), 0, PWM_MAX));
-  };
-
   return (
     <PanelSection title="POINTS">
       <PanelSectionRow>
@@ -437,7 +411,7 @@ function PointsPanel({
       <MinPwmWarningButton onFix={fixMinPwm} visible={belowMinPoint} />
       <div className="afc-note">
         Drag a point, or press A to steer it with the D-Pad. LB/RB switches points; B exits. Advanced editing uses
-        raw 0-255 PWM.
+        raw {CURVE_PWM_MIN}-{CURVE_PWM_MAX} PWM.
       </div>
       <ToggleEdit
         label="Fan Stop"
@@ -450,8 +424,8 @@ function PointsPanel({
           <NumberEdit
             label="Stop Until (°C)"
             value={fanStopTemp}
-            rangeMin={-40}
-            rangeMax={120}
+            rangeMin={CURVE_TEMP_MIN}
+            rangeMax={CURVE_TEMP_MAX}
             onCommit={onFanStopTempChange}
           />
           <div className="afc-note">The 0% minimum applies globally while Fan Stop is enabled.</div>
@@ -526,7 +500,7 @@ function PointRow({
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  const percent = Math.round((point.pwm / 255) * 100);
+  const percent = pwmToPercent(point.pwm);
 
   return (
     <div className="afc-point-row">
@@ -543,11 +517,17 @@ function PointRow({
           <NumberEdit
             label="Temperature (°C)"
             value={point.temp}
-            rangeMin={-40}
-            rangeMax={120}
+            rangeMin={CURVE_TEMP_MIN}
+            rangeMax={CURVE_TEMP_MAX}
             onCommit={onCommitTemp}
           />
-          <NumberEdit label="PWM (0-255)" value={point.pwm} rangeMin={0} rangeMax={255} onCommit={onCommitPwm} />
+          <NumberEdit
+            label={`PWM (${CURVE_PWM_MIN}-${CURVE_PWM_MAX})`}
+            value={point.pwm}
+            rangeMin={CURVE_PWM_MIN}
+            rangeMax={CURVE_PWM_MAX}
+            onCommit={onCommitPwm}
+          />
         </div>
       </AnimatedCollapse>
     </div>
