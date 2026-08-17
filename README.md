@@ -228,6 +228,7 @@ Join the Discord: [discord.gg/HdmdSxTD5S](https://discord.gg/HdmdSxTD5S)
   this repo is built from, and Steam/Gamescope session patterns.
 - **Fedora** and the **[bootc](https://github.com/bootc-dev/bootc)** project: the
   base image and tooling.
+- **[Rax](https://github.com/Raxcoms)** for the Armada logo.
 
 ## License
 
