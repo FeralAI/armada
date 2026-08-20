@@ -42,8 +42,8 @@
 ## About Armada
 
 Armada is a gaming-focused Linux distribution built on
-[Fedora bootc](https://github.com/bootc-dev/bootc) with device support from
-[ROCKNIX](https://github.com/ROCKNIX). It combines a console-first Steam
+[Fedora bootc](https://github.com/bootc-dev/bootc) with device support derived
+from [ROCKNIX](https://github.com/ROCKNIX). It combines a console-first Steam
 experience with a full KDE Plasma desktop while remaining an open, image-based
 operating system.
 
@@ -69,6 +69,7 @@ the guides there rather than instructions copied from older releases or posts.
 | Learn the interface | [Using Armada](https://armadaos.dev/using-armada/) |
 | Update an installation | [Updating](https://armadaos.dev/getting-started/updating/) |
 | Find help | [FAQ](https://armadaos.dev/troubleshooting/frequently-asked-questions/) · [Known issues](https://armadaos.dev/troubleshooting/known-issues/) |
+| Report a bug | [Github Issues](https://github.com/armada-os/armada/issues)
 
 ## Development
 
