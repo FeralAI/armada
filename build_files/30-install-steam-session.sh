@@ -37,6 +37,9 @@ dnf5 -y install --setopt=install_weak_deps=False \
     /packages/gamescope-session/gamescope-session-*.rpm
 
 dnf5 -y install --setopt=install_weak_deps=False \
+    /packages/gamescope-session-steam/gamescope-session-steam-*.rpm
+
+dnf5 -y install --setopt=install_weak_deps=False \
     erofs-fuse \
     erofs-utils \
     fuse-libs \
@@ -85,12 +88,6 @@ cat > /usr/share/fex-emu/Config.json <<'EOF'
   }
 }
 EOF
-
-# Bypass Terra's i686-only steam dependency; armada launches native ARM Steam.
-mkdir -p /tmp/gss-rpm
-dnf5 download --enable-repo=terra --destdir=/tmp/gss-rpm gamescope-session-steam
-rpm -ivh --nodeps /tmp/gss-rpm/gamescope-session-steam-*.rpm
-rm -rf /tmp/gss-rpm
 
 STEAM_BOOTSTRAP_HOME=/var/home/armada
 STEAM_HOME="${STEAM_BOOTSTRAP_HOME}/.local/share/Steam"
