@@ -3,8 +3,9 @@ ARG MESA_PKG=ghcr.io/armada-os/armada-packages/mesa@sha256:713eddabb61575b1d9fed
 ARG MESA_ANDROID_PKG=ghcr.io/armada-os/armada-packages/mesa-android@sha256:57b03a625ebdfa12d67210c9642f24f8389c22b319e86ab32715eedfd7ee963b
 ARG MESA_X86_PKG=ghcr.io/armada-os/armada-packages/mesa-x86@sha256:17ca26c35250ce0cd6a98bd13b6a21e06ca44f9e51f299fd008b1e79c4cabfc4
 ARG MANGOHUD_PKG=ghcr.io/armada-os/armada-packages/mangohud@sha256:6ed92b44d267a8d2e1339968b59c2679cfd30e81494d4990dcc2c92e0be4fc10
-ARG GAMESCOPE_PKG=ghcr.io/armada-os/armada-packages/gamescope@sha256:b5e5b978b7d3afce55f03f790ba12ee88170fe6b58fac5163084634b0276f495
-ARG GAMESCOPE_SESSION_PKG=ghcr.io/armada-os/armada-packages/gamescope-session@sha256:d17006f02124427f91c70e3c841c7819ca1721ad1d4033659f3656a674f8ee35
+ARG GAMESCOPE_PKG=ghcr.io/armada-os/armada-packages/gamescope@sha256:0e10f2642a02991004070e75c054dd7acf311e1e0893dedd9b0b541d2d2769db
+ARG GAMESCOPE_SESSION_PKG=ghcr.io/armada-os/armada-packages/gamescope-session@sha256:fdab4ddf7cbcba8a7f11a659e9c418c7ebea12693864aac6d13789b3f1e770e7
+ARG GAMESCOPE_SESSION_STEAM_PKG=ghcr.io/armada-os/armada-packages/gamescope-session-steam@sha256:fb051bbaf9434f2898a442a1087a38c8ec0c5c542ee42d8b7ac87a4f706e9b37
 ARG KWIN_PKG=ghcr.io/armada-os/armada-packages/kwin@sha256:0f9bfcb4d0da4cab4a049cba7d90eb9936b3d4be610ceb00f25ec0f58d0dc812
 ARG POWERDEVIL_PKG=ghcr.io/armada-os/armada-packages/powerdevil@sha256:f6d25143dca84f5f71076a3c992e06de87f7ae25fd046cfeb21999df989c4f8b
 ARG KERNEL_PKG=ghcr.io/armada-os/armada-packages/kernel@sha256:e109324da6008948cee316a3ae89220df70c59926763e88cadf93a0f8e2e7c26
@@ -20,6 +21,7 @@ FROM ${MESA_PKG} AS mesa
 FROM ${MANGOHUD_PKG} AS mangohud
 FROM ${GAMESCOPE_PKG} AS gamescope
 FROM ${GAMESCOPE_SESSION_PKG} AS gamescope-session
+FROM ${GAMESCOPE_SESSION_STEAM_PKG} AS gamescope-session-steam
 FROM ${KWIN_PKG} AS kwin
 FROM ${POWERDEVIL_PKG} AS powerdevil
 FROM ${KERNEL_PKG} AS kernel
@@ -60,6 +62,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=mangohud,source=/rpms,target=/packages/mangohud \
     --mount=type=bind,from=gamescope,source=/rpms,target=/packages/gamescope \
     --mount=type=bind,from=gamescope-session,source=/rpms,target=/packages/gamescope-session \
+    --mount=type=bind,from=gamescope-session-steam,source=/rpms,target=/packages/gamescope-session-steam \
     --mount=type=bind,from=kwin,source=/rpms,target=/packages/kwin \
     --mount=type=bind,from=powerdevil,source=/rpms,target=/packages/powerdevil \
     --mount=type=bind,from=kernel,source=/kernel,target=/packages/kernel \
