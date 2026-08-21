@@ -1,14 +1,16 @@
-import { Dropdown, DropdownItemInternal, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { Dropdown, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import type { ReactNode } from "react";
 import type { DropdownChoice } from "../types";
 
 type Option = string | DropdownChoice;
 
-export function SelectEdit({ label, value, options, onChange, labelBelow, disabled, placeholder, wrapperClassName }: {
+export function SelectEdit({ label, value, options, onChange, disabled, placeholder, wrapperClassName }: {
   label?: ReactNode;
   value: any;
   options: Option[];
   onChange: (data: any) => void;
+  // Accepted but no longer honoured: the labelBelow branch used DropdownItemInternal,
+  // which was dropped upstream to fix the Game Mode focus freeze (#272).
   labelBelow?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -17,12 +19,10 @@ export function SelectEdit({ label, value, options, onChange, labelBelow, disabl
   const rgOptions = options.map((option) => (typeof option === "string" ? { data: option, label: option } : option));
   const dropdown = label === undefined ? (
     <Dropdown disabled={disabled} strDefaultLabel={placeholder} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
-  ) : labelBelow ? (
+  ) : (
     <Field label={label} childrenLayout="below" childrenContainerWidth="max" disabled={disabled}>
       <Dropdown disabled={disabled} strDefaultLabel={placeholder} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
     </Field>
-  ) : (
-    <DropdownItemInternal disabled={disabled} strDefaultLabel={placeholder} childrenContainerWidth="max" label={label} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
   );
   return (
     <PanelSectionRow>
