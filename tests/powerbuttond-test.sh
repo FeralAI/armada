@@ -80,8 +80,21 @@ kill "$daemon_pid"
 wait "$daemon_pid" 2>/dev/null || true
 daemon_pid=
 
+# Standalone defaults must agree with the root hook's runtime-directory path.
+(
+    unset ARMADA_POWERBUTTON_PID_FILE ARMADA_LID_CLOSE_MARKER ARMADA_USER_RUNTIME_DIR
+    XDG_RUNTIME_DIR="$tmp/default-runtime"
+    source "$ROOT/system_files/usr/libexec/armada/powerbuttond"
+    [[ "$PID_FILE" == "$tmp/default-runtime/armada-powerbuttond/pid" ]]
+    [[ "$LID_CLOSE_MARKER" == "$tmp/default-runtime/armada-powerbuttond/lid-close-ms" ]]
+)
+
 # Killing a pipeline parent does not terminate its children.
 source "$ROOT/system_files/usr/libexec/armada/powerbuttond"
+LID_CLOSE_MARKER="$tmp/lid-close-ms"
+powerbutton_mark_lid_close
+[[ "$(<"$LID_CLOSE_MARKER")" =~ ^[0-9]+$ ]]
+rm -f -- "$LID_CLOSE_MARKER"
 (
     sleep 100 | while read -r _; do :; done
 ) &
