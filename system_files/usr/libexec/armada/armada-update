@@ -18,6 +18,7 @@ if ! grep -qs '"AccountName"' /var/home/armada/.local/share/Steam/config/loginus
 fi
 
 command -v bootc >/dev/null || exit 7
+reserve_bytes=$(armada_update_reserve_bytes) || exit 7
 
 booted_ref=$(armada_booted_ref)
 booted=$(armada_tag_from_ref "$booted_ref")
@@ -37,16 +38,28 @@ if [ "${check}" = 1 ]; then
     # Fail closed without deployment state (bootc status needs root).
     [ -n "${b_digest}" ] || exit 7
     staged=$(armada_tag_from_ref "${s_ref}")
+    remote_info=$(armada_remote_info "${desired}" "${registry}")
+    remote_status=$?
+    if [ "${remote_status}" != 0 ]; then
+        armada_log_remote_info_failure "${remote_status}" "${registry}:${desired}"
+        exit 7
+    fi
+    read -r r_required r_digest r_ver <<<"${remote_info}"
+    [ "${r_ver:-}" = "-" ] && r_ver=""
+    if [ -z "${r_digest:-}" ] || ! [[ "${r_required:-}" =~ ^[0-9]+$ ]]; then
+        armada_update_log "update target ${registry}:${desired} returned incomplete metadata"
+        exit 7
+    fi
     # A pending or stale channel switch is itself an available update.
     if [ "${staged}" != "${desired}" ] && { [ "${desired}" != "${booted}" ] || [ -n "${staged}" ]; }; then
-        armada_remote_version "${desired}" "${registry}"
+        armada_update_fits "${r_required}" "${reserve_bytes}" || exit 7
+        printf '%s\n' "${r_ver:-${r_digest}}"
         exit 0
     fi
     # Registry digests, not `bootc upgrade --check`: it caches its verdict, so
     # repeat checks cannot answer "newer than what is already held".
-    read -r r_digest r_ver <<<"$(armada_remote_info "${desired}" "${registry}")" || true
-    [ -n "${r_digest:-}" ] || exit 7
     if [ "${r_digest}" != "${b_digest}" ] && [ "${r_digest}" != "${s_digest}" ]; then
+        armada_update_fits "${r_required}" "${reserve_bytes}" || exit 7
         printf '%s\n' "${r_ver:-${r_digest}}"
         exit 0
     fi
@@ -58,12 +71,16 @@ if [ "${check}" = 1 ]; then
     exit 7
 fi
 
-# Bail if there isn't enough free disk space.
-avail_b=$(df -B1 --output=avail /var 2>/dev/null | tail -1 | tr -dc '0-9')
-if [ "${avail_b:-0}" -lt $((5 * 1024 * 1024 * 1024)) ]; then
-    echo "armada-update: under 5 GB free on /var, skipping update" >&2
+# Recheck immediately before applying in case free space changed after Steam's
+# availability probe. bootc repeats its own equivalent preflight as a backstop.
+remote_info=$(armada_remote_info "${desired}" "${registry}")
+remote_status=$?
+if [ "${remote_status}" != 0 ]; then
+    armada_log_remote_info_failure "${remote_status}" "${registry}:${desired}"
     exit 7
 fi
+read -r r_required _ <<<"${remote_info}"
+armada_update_fits "${r_required:-}" "${reserve_bytes}" || exit 7
 
 staged=$(armada_tag_from_ref "$(armada_staged_ref)")
 
