@@ -9,6 +9,7 @@ dnf5 -y install --setopt=install_weak_deps=False /packages/mangohud/mangohud-*.f
 
 dnf5 -y install --setopt=install_weak_deps=False \
     /packages/gamescope/terra-gamescope{,-libs}-[0-9]*.aarch64.rpm \
+    steam-devices \
     vulkan-loader \
     vulkan-tools \
     gamemode \
