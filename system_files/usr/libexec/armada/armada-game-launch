@@ -19,8 +19,7 @@ BASE_FEX_CONFIG = pathlib.Path("/usr/share/fex-emu/Config.json")
 TWEAKS_CONFIG = pathlib.Path("/etc/armada/game-tweaks.json")
 FEX_PROFILES_CONFIG = pathlib.Path("/usr/share/armada/fex-profiles.json")
 PROTON_INJECT_SRC = pathlib.Path("/usr/share/armada/proton-inject/x86_64-linux-gnu")
-APPIMAGE_EXEC_PATHS = ("/usr/local/bin", "/usr/bin", "/bin")
-
+APPIMAGE_EXEC_PATHS = ("/usr/bin", "/usr/local/bin", "/bin")
 
 def is_appimage(command):
     try:
@@ -48,12 +47,12 @@ def prepare_appimage_path(args):
     if not any(is_appimage(arg) for arg in args):
         return
 
-    paths = os.environ.get("PATH", "").split(":") if os.environ.get("PATH") else []
-    for path in APPIMAGE_EXEC_PATHS:
-        if path not in paths:
-            paths.append(path)
-    os.environ["PATH"] = ":".join(paths)
+    paths = [*APPIMAGE_EXEC_PATHS]
 
+    if existing := os.environ.get("PATH"):
+        paths.append(existing)
+
+    os.environ["PATH"] = os.pathsep.join(paths)
 
 def appid():
     for key in ("STEAM_COMPAT_APP_ID", "SteamAppId", "SteamGameId"):
