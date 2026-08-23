@@ -109,3 +109,27 @@ export interface DropdownChoice {
   data: string;
   label: string;
 }
+
+export interface ProfileSummary {
+  label: string;
+  fan_curve: string;
+}
+
+export interface FanSettings {
+  ramp_up: number;
+  ramp_down: number;
+  smoothing: number;
+  min_pwm: number;
+}
+
+export interface CurvesState {
+  fanCurves: Record<string, FanCurve>;
+  factoryFanCurves: Record<string, FanCurve>;
+  fanSettings: FanSettings;
+  factoryFanSettings: FanSettings;
+  profiles: Record<string, ProfileSummary>;
+  // Falls back to the configured default, then any profile, if the daemon state can't be read.
+  activeProfile: string;
+  // Live marker instead polls get_current_temp (see hooks/useCurrentTemp).
+  currentTemp: number | null;
+}

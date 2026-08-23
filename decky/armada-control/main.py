@@ -21,6 +21,8 @@ from armada_control.system import (
     set_ssh_enabled,
 )
 from armada_control.tweaks import load_compat_applied, save_compat_applied, save_tweaks
+from armada_control.fan_curves import get_state as get_fans_state, save_all as save_fan_curves
+from armada_control.fan_sensors import get_current_temp
 
 
 class Plugin:
@@ -86,3 +88,13 @@ class Plugin:
 
     async def end_calibration_session(self, token=None):
         return await asyncio.to_thread(end_session, token)
+
+    async def get_fans_state(self):
+        return await asyncio.to_thread(get_fans_state)
+
+    async def save_fan_curves(self, fan_curves, fan_settings):
+        return await asyncio.to_thread(save_fan_curves, fan_curves, fan_settings)
+
+    # Polled separately from get_fans_state -- see hooks/useCurrentTemp.
+    async def get_current_temp(self):
+        return await asyncio.to_thread(get_current_temp)
