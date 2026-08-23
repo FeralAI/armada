@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 HOOK="$ROOT/system_files/usr/lib/systemd/system-sleep/50-armada-powerbutton-suspend"
+[[ -x "$HOOK" ]]
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 

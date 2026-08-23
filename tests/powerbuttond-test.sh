@@ -8,48 +8,20 @@ if [[ "${ARMADA_POWERBUTTON_TEST_FIXTURE:-}" == 1 ]]; then
     tmp="$ARMADA_POWERBUTTON_TEST_TMP"
     source "$ROOT/system_files/usr/libexec/armada/powerbuttond"
 
-    log() {
-        if [[ "$*" == "power press just after resume -> ignored" ]]; then
-            touch "$tmp/rebound-ignored"
-        fi
-        return 0
-    }
+    log() { :; }
     power_device() { printf '/dev/input/fake\n'; }
     armada_find_lid_dev() { return 1; }
     armada_lid_closed() { return 1; }
-    steam_uri() {
-        if [[ -e "$tmp/expired-started" ]]; then
-            printf '%s\n' "$1" >"$tmp/expired-consumed"
-        else
-            printf '%s\n' "$1" >"$tmp/within-consumed"
-        fi
-    }
+    steam_uri() { printf '%s\n' "$1" >"$tmp/fresh-consumed"; }
     evtest() {
         exec 9<>"$tmp/block"
         if [[ ! -e "$tmp/old-started" ]]; then
             printf '%s\n' "$BASHPID" >"$tmp/old-producer-pid"
             touch "$tmp/old-started"
             printf 'old-event\n'
-        elif [[ ! -e "$tmp/rebound-started" ]]; then
-            printf '%s\n' "$BASHPID" >"$tmp/rebound-producer-pid"
-            touch "$tmp/rebound-started"
-            printf 'Event: (KEY_POWER), value 1\n'
-            attempts=100
-            while [[ ! -e "$tmp/rebound-ignored" ]] && (( attempts > 0 )); do
-                sleep 0.01
-                attempts=$((attempts - 1))
-            done
-            [[ -e "$tmp/rebound-ignored" ]]
-            printf 'Event: (KEY_POWER), value 0\n'
-            touch "$tmp/rebound-finished"
-            sleep 0.05
-            touch "$tmp/within-started"
-            printf 'Event: (KEY_POWER), value 1\n'
-            printf 'Event: (KEY_POWER), value 0\n'
         else
-            printf '%s\n' "$BASHPID" >"$tmp/expired-producer-pid"
-            sleep 0.3
-            touch "$tmp/expired-started"
+            printf '%s\n' "$BASHPID" >"$tmp/fresh-producer-pid"
+            touch "$tmp/fresh-started"
             printf 'Event: (KEY_POWER), value 1\n'
             printf 'Event: (KEY_POWER), value 0\n'
         fi
@@ -83,7 +55,6 @@ wait_for_file() {
 ARMADA_POWERBUTTON_TEST_FIXTURE=1 \
 ARMADA_POWERBUTTON_TEST_TMP="$tmp" \
 ARMADA_POWERBUTTON_PID_FILE="$tmp/daemon-pid" \
-ARMADA_POWERBUTTON_REBOUND_GUARD_MS=250 \
     bash "$0" &
 daemon_pid=$!
 
@@ -94,31 +65,14 @@ old_producer_pid="$(<"$tmp/old-producer-pid")"
 
 kill -USR1 "$daemon_pid"
 
-wait_for_file "$tmp/rebound-started"
-wait_for_file "$tmp/rebound-finished"
+wait_for_file "$tmp/fresh-started"
+wait_for_file "$tmp/fresh-consumed"
 [[ "$(<"$tmp/daemon-pid")" == "$daemon_pid" ]]
-[[ ! -e "$tmp/within-consumed" ]]
-rebound_producer_pid="$(<"$tmp/rebound-producer-pid")"
-[[ "$rebound_producer_pid" != "$old_producer_pid" ]]
+[[ "$(<"$tmp/fresh-consumed")" == shortpowerpress ]]
+fresh_producer_pid="$(<"$tmp/fresh-producer-pid")"
+[[ "$fresh_producer_pid" != "$old_producer_pid" ]]
 if kill -0 "$old_producer_pid" 2>/dev/null; then
     printf 'old power-button stream survived resume\n' >&2
-    exit 1
-fi
-
-# Consuming the rebound lets a second press through inside the same window.
-wait_for_file "$tmp/within-started"
-wait_for_file "$tmp/within-consumed"
-[[ "$(<"$tmp/within-consumed")" == shortpowerpress ]]
-
-# A fresh guard also expires without seeing a rebound press.
-kill -USR1 "$daemon_pid"
-wait_for_file "$tmp/expired-started"
-wait_for_file "$tmp/expired-consumed"
-[[ "$(<"$tmp/expired-consumed")" == shortpowerpress ]]
-expired_producer_pid="$(<"$tmp/expired-producer-pid")"
-[[ "$expired_producer_pid" != "$rebound_producer_pid" ]]
-if kill -0 "$rebound_producer_pid" 2>/dev/null; then
-    printf 'rebound power-button stream survived restart\n' >&2
     exit 1
 fi
 
@@ -133,7 +87,6 @@ daemon_pid=
     source "$ROOT/system_files/usr/libexec/armada/powerbuttond"
     [[ "$PID_FILE" == "$tmp/default-runtime/armada-powerbuttond/pid" ]]
     [[ "$LID_CLOSE_MARKER" == "$tmp/default-runtime/armada-powerbuttond/lid-close-ms" ]]
-    [[ -z "$RESUMED_MS" ]]
 )
 
 # Killing a pipeline parent does not terminate its children.
@@ -176,4 +129,4 @@ for child_pid in "${lid_children[@]}"; do
     fi
 done
 
-printf 'powerbutton rebound and cleanup test passed\n'
+printf 'powerbutton resume and cleanup test passed\n'

@@ -10,9 +10,6 @@ POWER_DEVICE_WAIT_SEC="${ARMADA_POWERBUTTON_DEVICE_WAIT_SEC:-15}"
 USER_RUNTIME_DIR="${ARMADA_USER_RUNTIME_DIR:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}}"
 PID_FILE="${ARMADA_POWERBUTTON_PID_FILE:-${USER_RUNTIME_DIR}/armada-powerbuttond/pid}"
 LID_CLOSE_MARKER="${ARMADA_LID_CLOSE_MARKER:-${USER_RUNTIME_DIR}/armada-powerbuttond/lid-close-ms}"
-REBOUND_GUARD_MS="${ARMADA_POWERBUTTON_REBOUND_GUARD_MS:-2500}"
-RESUMED_MS="${ARMADA_POWERBUTTON_RESUMED_MS:-}"
-unset ARMADA_POWERBUTTON_RESUMED_MS
 
 log() { logger -t armada-powerbuttond -- "$*"; }
 source /usr/lib/armada/input-lib 2>/dev/null || true
@@ -75,23 +72,9 @@ powerbutton_mark_lid_close() {
     chmod 0600 "$LID_CLOSE_MARKER"
 }
 
-powerbutton_now_ms() {
-    awk '{ printf "%.0f\n", $1 * 1000 }' /proc/uptime
-}
-
-powerbutton_just_resumed() {
-    local now_ms
-
-    now_ms=$(powerbutton_now_ms 2>/dev/null) || return 1
-    [[ "$RESUMED_MS" =~ ^[0-9]+$ && "$now_ms" =~ ^[0-9]+$ ]] || return 1
-    (( now_ms >= RESUMED_MS && now_ms - RESUMED_MS <= REBOUND_GUARD_MS )) || return 1
-    RESUMED_MS=
-}
-
 powerbutton_reexec() {
     trap - USR1
     powerbutton_stop_watchers
-    export ARMADA_POWERBUTTON_RESUMED_MS="$(powerbutton_now_ms 2>/dev/null)"
     exec /bin/bash "$0"
     exit 1
 }
@@ -180,7 +163,6 @@ powerbutton_main() {
                 esac
                 ;;
             draining)
-                # A long press fired, or the resume rebound is being ignored.
                 case "$line" in
                     *"(KEY_POWER), value 0"*) state=idle ;;
                 esac
@@ -191,9 +173,6 @@ powerbutton_main() {
                     *"(KEY_POWER), value 1"*)
                         if armada_lid_closed 2>/dev/null; then
                             log "power w/ lid closed -> ignored"
-                        elif powerbutton_just_resumed; then
-                            log "power press just after resume -> ignored"
-                            state=draining
                         else
                             press_ms=$(date +%s%3N)
                             state=held
