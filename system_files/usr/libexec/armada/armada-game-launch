@@ -19,7 +19,7 @@ BASE_FEX_CONFIG = pathlib.Path("/usr/share/fex-emu/Config.json")
 TWEAKS_CONFIG = pathlib.Path("/etc/armada/game-tweaks.json")
 FEX_PROFILES_CONFIG = pathlib.Path("/usr/share/armada/fex-profiles.json")
 PROTON_INJECT_SRC = pathlib.Path("/usr/share/armada/proton-inject/x86_64-linux-gnu")
-APPIMAGE_EXEC_PATHS = ("/usr/bin", "/usr/local/bin", "/bin")
+SYSTEM_EXEC_PATHS = ("/usr/bin", "/usr/local/bin", "/bin")
 
 def is_appimage(command):
     try:
@@ -47,7 +47,7 @@ def prepare_appimage_path(args):
     if not any(is_appimage(arg) for arg in args):
         return
 
-    paths = [*APPIMAGE_EXEC_PATHS]
+    paths = [*SYSTEM_EXEC_PATHS]
 
     if existing := os.environ.get("PATH"):
         paths.append(existing)
@@ -274,6 +274,9 @@ def main():
         print(f"armada-game-launch: failed to apply settings: {exc}", file=sys.stderr)
 
     prepare_appimage_path(args)
+
+    if not os.environ.get("PATH"):
+        os.environ["PATH"] = os.pathsep.join(SYSTEM_EXEC_PATHS)
 
     try:
         apply_perf(settings, game_id)
