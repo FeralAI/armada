@@ -9,6 +9,7 @@ dnf5 -y install --setopt=install_weak_deps=False /packages/mangohud/mangohud-*.f
 
 dnf5 -y install --setopt=install_weak_deps=False \
     /packages/gamescope/terra-gamescope{,-libs}-[0-9]*.aarch64.rpm \
+    steam-devices \
     vulkan-loader \
     vulkan-tools \
     gamemode \
@@ -103,8 +104,8 @@ PROTON_TAR="${PROTON_ARCHIVE_NAME}.tar.xz"
 PROTON_URL="https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-${PROTON_VER}/${PROTON_TAR}"
 PROTON_SHA512_URL="https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-${PROTON_VER}/${PROTON_ARCHIVE_NAME}.sha512sum"
 
-curl --retry 3 --retry-delay 2 -fsSL -o "/tmp/${PROTON_TAR}" "${PROTON_URL}"
-curl --retry 3 --retry-delay 2 -fsSL -o "/tmp/${PROTON_ARCHIVE_NAME}.sha512sum" "${PROTON_SHA512_URL}"
+curl --retry 12 --retry-delay 10 -fsSL -o "/tmp/${PROTON_TAR}" "${PROTON_URL}"
+curl --retry 12 --retry-delay 10 -fsSL -o "/tmp/${PROTON_ARCHIVE_NAME}.sha512sum" "${PROTON_SHA512_URL}"
 cd /tmp
 sha512sum -c "${PROTON_ARCHIVE_NAME}.sha512sum"
 
