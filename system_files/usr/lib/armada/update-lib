@@ -48,6 +48,31 @@ armada_registry_from_ref() {
     esac
 }
 
+# Non-registry transports cannot be checked for network updates.
+armada_repository_from_ref() {
+    local r
+    case "$1" in
+        *docker://*) r="${1##*docker://}" ;;
+        *) return 1 ;;
+    esac
+    r="${r%%@*}"
+    [[ "${r##*/}" == *:* ]] && r="${r%:*}"
+    [[ -n "$r" && "$r" == */* && "$r" != *[[:space:]]* ]] || return 1
+    echo "$r"
+}
+
+armada_steam_channels_apply() {
+    local channel
+    case "$1" in
+        "$ARMADA_CANONICAL_REGISTRY"|"$ARMADA_LEGACY_REGISTRY") ;;
+        *) return 1 ;;
+    esac
+    for channel in ${ARMADA_CHANNELS}; do
+        [[ "$2" == "$channel" ]] && return 0
+    done
+    return 1
+}
+
 # Raw container-image-reference of the booted deployment. rpm-ostree works
 # unprivileged (bootc status needs root), so the -c query can call this.
 armada_booted_ref() {
@@ -221,6 +246,30 @@ armada_desired_channel() {
         [[ "$c" == "$ch" ]] && { echo "$c"; return; }
     done
     if [[ -n "${1:-}" ]]; then echo "$1"; else armada_booted_channel; fi
+}
+
+armada_update_target() {
+    local ref="$1" booted repository desired
+    booted="$(armada_tag_from_ref "$ref")"
+    if repository="$(armada_repository_from_ref "$ref")"; then
+        if [[ -z "$booted" ]]; then
+            case "$repository" in
+                "$ARMADA_CANONICAL_REGISTRY"|"$ARMADA_LEGACY_REGISTRY") ;;
+                *) return 1 ;;
+            esac
+        fi
+        if [[ -n "$booted" ]] && ! armada_steam_channels_apply "$repository" "$booted"; then
+            desired="$booted"
+        else
+            desired="$(armada_desired_channel "$booted")"
+        fi
+    else
+        repository="$ARMADA_CANONICAL_REGISTRY"
+        desired="$(armada_desired_channel "$booted")"
+    fi
+    [[ -n "$repository" && -n "$desired" && \
+        "$repository" != *[[:space:]]* && "$desired" != *[[:space:]]* ]] || return 1
+    printf '%s %s\n' "$repository" "$desired"
 }
 
 # Run a bootc command with progress wired to the Steam N% translator. fd 3 must
