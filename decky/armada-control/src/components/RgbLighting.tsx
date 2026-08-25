@@ -5,6 +5,8 @@ import { getRgb, setRgb } from "../backend";
 import type { RgbConfig } from "../types";
 import { SliderEdit, ToggleRow } from "./widgets";
 
+const UPDATE_INTERVAL_MS: number = 100;
+
 function colorHue(color: string): number {
   const red: number = Number.parseInt(color.slice(0, 2), 16) / 255;
   const green: number = Number.parseInt(color.slice(2, 4), 16) / 255;
@@ -46,6 +48,7 @@ function hueColor(hue: number): string {
 export function RgbLighting() {
   const [config, setConfig] = useState<RgbConfig | null>(null);
   const savedConfig = useRef<string>("");
+  const lastUpdate = useRef<number>(0);
 
   const load = useCallback(async () => {
     try {
@@ -66,7 +69,10 @@ export function RgbLighting() {
     const current: string = JSON.stringify(config);
     if (current === savedConfig.current) return;
 
+    const elapsed: number = Date.now() - lastUpdate.current;
+    const delay: number = Math.max(0, UPDATE_INTERVAL_MS - elapsed);
     const timer: number = window.setTimeout(async () => {
+      lastUpdate.current = Date.now();
       try {
         await setRgb(config.enabled, config.color, config.brightness);
         savedConfig.current = current;
@@ -74,7 +80,7 @@ export function RgbLighting() {
         toaster.toast({ title: "Could not change RGB lighting", body: String(error) });
         load();
       }
-    }, 150);
+    }, delay);
 
     return () => window.clearTimeout(timer);
   }, [config, load]);
