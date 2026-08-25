@@ -10,6 +10,7 @@ from armada_control.calibration import (
 from armada_control.config import build_config
 from armada_control.controller import set_controller_type
 from armada_control.power import save_power_config
+from armada_control.rgb import get_rgb, set_rgb
 from armada_control.steam import compat_mapped_appids, installed_games
 from armada_control.system import (
     reapply_perf,
@@ -73,6 +74,12 @@ class Plugin:
 
     async def set_controller_type(self, value):
         return await asyncio.to_thread(set_controller_type, value)
+
+    async def get_rgb(self):
+        return await asyncio.to_thread(get_rgb)
+
+    async def set_rgb(self, enabled, color, brightness):
+        return await asyncio.to_thread(set_rgb, enabled, color, brightness)
 
     async def get_controller_state(self):
         return await asyncio.to_thread(controller_state)

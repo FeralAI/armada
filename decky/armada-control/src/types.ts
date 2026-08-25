@@ -66,6 +66,13 @@ export interface CalibrationState {
   params?: Record<string, number>;
 }
 
+export interface RgbConfig {
+  version: number;
+  enabled: boolean;
+  brightness: number;
+  color: string;
+}
+
 export interface GameRef {
   appid: string;
   name: string;
