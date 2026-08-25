@@ -1,3 +1,5 @@
+import { gamepadSliderClasses } from "@decky/ui";
+
 export const styles = `
       .armada-control-tabs {
         height: 95%;
@@ -46,6 +48,11 @@ export const styles = `
       .armada-control-tabs .armada-slider-field * {
         min-width: 0 !important;
         max-width: 100% !important;
+      }
+      .armada-control-tabs .armada-rgb-hue .${gamepadSliderClasses.SliderTrack} {
+        --left-track-color: #0000;
+        --colored-toggles-main-color: #0000;
+        background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
       }
       .armada-control-tabs .armada-subheader {
         text-transform: uppercase;

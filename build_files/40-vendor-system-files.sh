@@ -77,6 +77,7 @@ systemctl enable armada-controller-type.service
 systemctl enable inputplumber.service
 systemctl enable armada-guestos.service
 systemctl enable armada-device-quirks.service
+systemctl enable armada-rgb.service
 systemctl enable armada-fixups.service
 systemctl enable armada-update-reserve.service
 systemctl enable armada-installer-visibility.service

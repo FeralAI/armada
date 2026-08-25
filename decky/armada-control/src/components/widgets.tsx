@@ -47,7 +47,7 @@ export function ToggleRow({ label, value, onChange, disabled, description, wrapp
   );
 }
 
-export function SliderEdit({ label, value, min, max, step, onChange, format, disabled, wrapperClassName = "armada-slider-field" }: {
+export function SliderEdit({ label, value, min, max, step, onChange, format, disabled, showValue = true, wrapperClassName = "armada-slider-field" }: {
   label: ReactNode;
   value: any;
   min: number;
@@ -56,6 +56,7 @@ export function SliderEdit({ label, value, min, max, step, onChange, format, dis
   onChange: (value: any) => void;
   format?: (value: number) => any;
   disabled?: boolean;
+  showValue?: boolean;
   wrapperClassName?: string;
 }) {
   const numeric = Number(value);
@@ -68,7 +69,7 @@ export function SliderEdit({ label, value, min, max, step, onChange, format, dis
           min={min}
           max={max}
           step={step}
-          showValue
+          showValue={showValue}
           disabled={disabled}
           onChange={(next) => onChange(format ? format(next) : next)}
         />
