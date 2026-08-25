@@ -78,4 +78,8 @@ assert calls.pop() == (
 )
 PYEOF
 
+grep -Fq 'ConditionPathExists=/etc/armada/rgb.json' "$ROOT/system_files/usr/lib/systemd/system/armada-rgb.service"
+grep -Fq 'ExecStart=/usr/bin/armada-rgb apply' "$ROOT/system_files/usr/lib/systemd/system/armada-rgb.service"
+grep -Fq 'systemctl enable armada-rgb.service' "$ROOT/build_files/40-vendor-system-files.sh"
+
 printf 'Armada Control RGB tests passed\n'
