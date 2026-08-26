@@ -57,6 +57,18 @@ export const tabIcons = {
       }
     />
   ),
+  RGB: (
+    <Icon
+      size={TAB_ICON_SIZE}
+      path={
+        <>
+          <circle cx="8" cy="8" r="4" />
+          <circle cx="16" cy="8" r="4" />
+          <circle cx="12" cy="15" r="4" />
+        </>
+      }
+    />
+  ),
   Advanced: (
     <Icon
       size={TAB_ICON_SIZE}
