@@ -94,6 +94,7 @@ export interface Config {
   fexProfiles: Record<string, FexProfile>;
   perf?: PerfInfo;
   cpuDeviceClass: string;
+  rgbSupported: boolean;
   osVersion: string;
   ablVersion: string;
   ablAutoEnabled: boolean;

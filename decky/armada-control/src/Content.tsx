@@ -2,6 +2,7 @@ import { Field, PanelSection, Tabs } from "@decky/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { getConfig, getInstalledGames, savePowerConfig, saveTweaks } from "./backend";
+import { RgbLighting } from "./components/RgbLighting";
 import { useDebouncedSave } from "./hooks/useDebouncedSave";
 import { tabIcons } from "./icons";
 import { currentGame } from "./lib/games";
@@ -90,6 +91,9 @@ export function Content() {
           { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(<Compatibility config={config} setConfig={setConfig} />) },
           { id: "Power", title: tabIcons.Power, content: tabContent(<Power config={config} setConfig={setConfig} />) },
           { id: "Fans", title: tabIcons.Fans, content: tabContent(<Fans setConfig={setConfig} />) },
+          ...(config.rgbSupported ? [
+            { id: "RGB", title: tabIcons.RGB, content: tabContent(<RgbLighting />) },
+          ] : []),
           { id: "Advanced", title: tabIcons.Advanced, content: tabContent(<Settings config={config} setConfig={setConfig} />) },
         ]}
       />

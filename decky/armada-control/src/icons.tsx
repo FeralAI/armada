@@ -57,6 +57,20 @@ export const tabIcons = {
       }
     />
   ),
+  // "lightbulb" icon from Lucide (https://lucide.dev), ISC License.
+  RGB: (
+    <Icon
+      size={TAB_ICON_SIZE}
+      path={
+        <>
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+          <path d="M15.09 14c.18-.88.65-1.39 1.41-2.25A6 6 0 0 0 9.33 2.35a6 6 0 0 0-1.83 9.4c.75.85 1.23 1.37 1.41 2.25" />
+          <path d="M9 14h6" />
+        </>
+      }
+    />
+  ),
   Advanced: (
     <Icon
       size={TAB_ICON_SIZE}
