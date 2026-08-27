@@ -10,9 +10,10 @@ update-desktop-database -q /usr/share/applications
 
 cp -a /packages/mesa-android/waydroid/vendor /usr/share/armada/waydroid/
 
-# x86 Turnip payload for the guestos overlay; the rootfs's driver lacks armada's mesa patches
-mkdir -p /usr/share/armada/guestos-x86-mesa
-cp -a /packages/mesa-x86/guestos-x86-mesa/usr /usr/share/armada/guestos-x86-mesa/
+mesa_sqsh=/usr/share/fex-emu/RootFS/ArmadaMesa.sqsh
+install -Dm0644 /packages/mesa-x86/ArmadaMesa.sqsh "${mesa_sqsh}"
+# A separate rechunk component keeps Mesa-only updates from invalidating ArchLinux.sqsh.
+python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"fex-mesa")' "${mesa_sqsh}"
 
 # Status text font for armada-splash (falls back to its embedded bitmap font
 # if this link dangles). Static face: stb_truetype renders a VF's default
