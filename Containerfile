@@ -1,7 +1,7 @@
 ARG FEX_PKG=ghcr.io/armada-os/armada-packages/fex@sha256:7ad92a80e6698245ade709b4f357988dd1520aca25203f7d39659585f2b9948f
 ARG MESA_PKG=ghcr.io/armada-os/armada-packages/mesa@sha256:713eddabb61575b1d9fed5e1c63a7e4459447d34e21d3c0b95f307f9cf54d716
 ARG MESA_ANDROID_PKG=ghcr.io/armada-os/armada-packages/mesa-android@sha256:57b03a625ebdfa12d67210c9642f24f8389c22b319e86ab32715eedfd7ee963b
-ARG MESA_X86_PKG=ghcr.io/armada-os/armada-packages/mesa-x86@sha256:17ca26c35250ce0cd6a98bd13b6a21e06ca44f9e51f299fd008b1e79c4cabfc4
+ARG MESA_X86_PKG=ghcr.io/armada-os/armada-packages/mesa-x86@sha256:68ea12e625f577a311cd4bf65d2ea1110628200759598bc4a788c9afdaf8b81c
 ARG MANGOHUD_PKG=ghcr.io/armada-os/armada-packages/mangohud@sha256:6ed92b44d267a8d2e1339968b59c2679cfd30e81494d4990dcc2c92e0be4fc10
 ARG GAMESCOPE_PKG=ghcr.io/armada-os/armada-packages/gamescope@sha256:23af205c48cb5bd48190f825614d4bc0f29af5d99eb9a9f00026a202c2f12ecb
 ARG GAMESCOPE_SESSION_PKG=ghcr.io/armada-os/armada-packages/gamescope-session@sha256:f778b6def98b813d24f2a40ef038d40e8a85dc60be41d17efafbb9d4baff345b
