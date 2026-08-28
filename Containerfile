@@ -17,6 +17,7 @@ ARG ARMADA_SPLASH_PKG=ghcr.io/armada-os/armada-packages/armada-splash@sha256:6b0
 ARG ARMADA_RGB_PKG=ghcr.io/armada-os/armada-packages/armada-rgb@sha256:a7b66324d7bf8030e260d5f2fc9074ad9ced7c47852187783f5e3e082d0ebc25
 ARG UMTP_RESPONDER_PKG=ghcr.io/armada-os/armada-packages/umtp-responder@sha256:b0fe59bf87bccdde7273d7ade9f824171a5b4ac5f132b4670b32a73bb1f871b3
 ARG CHUNKAH_IMAGE=quay.io/coreos/chunkah@sha256:ff8b8b466a942ec6000445d4001fc661e2fc5a952ad9ee29b4de9ab09d1d1708
+ARG BASE_IMAGE=quay.io/fedora/fedora-bootc:44
 
 FROM ${FEX_PKG} AS fex
 FROM ${MESA_PKG} AS mesa
@@ -55,7 +56,7 @@ COPY build_files /build_files/
 COPY decky /decky/
 COPY system_files /system_files/
 
-FROM quay.io/fedora/fedora-bootc:44 AS armada-rootfs
+FROM ${BASE_IMAGE} AS armada-rootfs
 ARG ARMADA_VERSION=unknown
 LABEL org.opencontainers.image.version="${ARMADA_VERSION}"
 
@@ -91,12 +92,13 @@ RUN bootc container lint
 
 FROM ${CHUNKAH_IMAGE} AS chunkah
 ARG CHUNKAH_CONFIG_STR
-RUN --mount=type=bind,target=/run/src,rw \
-    --mount=from=armada-rootfs,target=/chunkah,ro \
+RUN --mount=from=armada-rootfs,target=/chunkah,ro \
     /bin/bash -o pipefail -c ' \
+        set -e; \
         start=${SECONDS}; \
         chunkah build --verbose --compressed --compression-level 6 \
-            --arch arm64 --max-layers 128 --prune /sysroot/ \
+            --arch arm64 --max-layers 128 --source-date-epoch 0 \
+            --prune /sysroot/ \
             --label ostree.commit- --label ostree.final-diffid- \
             --config-str "${CHUNKAH_CONFIG_STR}" \
             --output oci:/run/src/chunked 2>&1 | tee /run/src/chunkah.log; \

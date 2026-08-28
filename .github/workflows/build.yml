@@ -19,6 +19,7 @@ on:
 env:
   ARMADA_CANONICAL_IMAGE: "ghcr.io/armada-os/armada"
   ARMADA_LEGACY_IMAGE: "ghcr.io/virtudude/armada"
+  BASE_IMAGE: "quay.io/fedora/fedora-bootc:44"
   IMAGE_DESC: "Armada: a gaming-focused, SteamOS-like Fedora bootc image for ARM64 handhelds"
   IMAGE_NAME: "${{ github.event.repository.name }}"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
@@ -122,18 +123,22 @@ jobs:
 
       - name: Prepare Chunkah config
         id: chunkah_config
-        if: github.event_name != 'pull_request'
         env:
           METADATA_JSON: ${{ steps.metadata.outputs.json }}
         run: |
           set -euo pipefail
+          base_digest=$(skopeo inspect --override-arch arm64 --format '{{.Digest}}' \
+            "docker://${BASE_IMAGE}")
+          base_image="${BASE_IMAGE%:*}@${base_digest}"
           config=$(skopeo inspect --override-arch arm64 --config \
-            docker://quay.io/fedora/fedora-bootc:44 |
+            "docker://${base_image}" |
             jq -c --argjson metadata "${METADATA_JSON}" '
               .config |
               .Labels = ((.Labels // {}) + ($metadata.labels // {})) |
               del(.Labels["ostree.commit"]) |
               del(.Labels["ostree.final-diffid"])')
+          printf '%s\n' "${config}" > "${RUNNER_TEMP}/chunkah-config.json"
+          echo "base_image=${base_image}" >> "${GITHUB_OUTPUT}"
           echo "config=${config}" >> "${GITHUB_OUTPUT}"
 
       - name: Build Image
@@ -147,6 +152,7 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           build-args: |
             ARMADA_VERSION=${{ steps.version.outputs.version }}
+            BASE_IMAGE=${{ steps.chunkah_config.outputs.base_image }}
             CHUNKAH_CONFIG_STR=${{ steps.chunkah_config.outputs.config }}
           extra-args: |
             --skip-unused-stages=false
@@ -162,6 +168,7 @@ jobs:
           set -euxo pipefail
           CHUNKAH_LOG_FILE="${RUNNER_TEMP}/chunkah.log"
           CHUNKAH_MANIFEST_FILE="${RUNNER_TEMP}/chunkah-manifest.json"
+          CHUNKAH_IMAGE_CONFIG_FILE="${RUNNER_TEMP}/chunkah-image-config.json"
           for component in steam proton fex-rootfs; do
             if ! grep -Eq "creating tar layer .*\"xattr/${component}\"" "${CHUNKAH_LOG_FILE}"; then
               echo "::error::Chunkah did not emit an xattr/${component} component layer"
@@ -182,13 +189,19 @@ jobs:
               echo "::error::Chunkah output retained OSTree manifest annotations"
               exit 1
             }
-          skopeo inspect --config "${CHUNKED_REF}" |
-            jq -e '.architecture == "arm64" and .os == "linux" and
+          skopeo inspect --config "${CHUNKED_REF}" > "${CHUNKAH_IMAGE_CONFIG_FILE}"
+          jq -e --slurpfile expected "${RUNNER_TEMP}/chunkah-config.json" \
+            '.config == $expected[0]' "${CHUNKAH_IMAGE_CONFIG_FILE}" || {
+              echo "::error::Chunkah output did not preserve the prepared runtime config"
+              exit 1
+            }
+          jq -e '.architecture == "arm64" and .os == "linux" and
               .config.Cmd == ["/sbin/init"] and
               .config.Labels["containers.bootc"] == "1" and
               .config.Labels["ostree.bootable"] == "true" and
               (.config.Labels | has("ostree.commit") | not) and
-              (.config.Labels | has("ostree.final-diffid") | not)'
+              (.config.Labels | has("ostree.final-diffid") | not)' \
+            "${CHUNKAH_IMAGE_CONFIG_FILE}"
           jq '{layers: (.layers | length), compressed_bytes: ([.layers[].size] | add)}' \
             "${CHUNKAH_MANIFEST_FILE}"
           echo "ref=${CHUNKED_REF}" >> "${GITHUB_OUTPUT}"
