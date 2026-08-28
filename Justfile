@@ -120,6 +120,7 @@ build $target_image=image_name $tag=default_tag:
         "${SECRET_ARGS[@]}" \
         --platform linux/arm64 \
         --pull="${PULL_POLICY}" \
+        --target armada-rootfs \
         --tag "${target_image}:${tag}" \
         .
 

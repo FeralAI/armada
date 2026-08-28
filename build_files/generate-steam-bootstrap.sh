@@ -160,6 +160,7 @@ find "${STEAM_BOOTSTRAP_HOME}" \
     -delete
 find "${STEAM_BOOTSTRAP_HOME}" \( -type s -o -type p \) -delete
 rm -f \
+    "${STEAM}/package/steam_client_metrics.bin" \
     "${STEAM}/registry.vdf" \
     "${STEAM}/ssfn"* \
     "${DOT_STEAM}/registry.vdf" \
