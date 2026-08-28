@@ -121,28 +121,121 @@ export LD_LIBRARY_PATH="${STEAM}/steamrtarm64:${STEAM}/lib/aarch64-linux-gnu"
 
 installed_manifest="${STEAM}/package/${STEAM_ARM_MANIFEST_NAME}.installed"
 
-set +e
-timeout "${STEAM_BOOTSTRAP_TIMEOUT}" \
-    "${STEAM}/steamrtarm64/steam" \
-    -steamdeck \
-    -exitsteam \
-    >/tmp/armada-steam-bootstrap.stdout \
-    2>/tmp/armada-steam-bootstrap.stderr
-steam_rc=$?
-set -e
+verify_installed_manifest() {
+    python3 - "${installed_manifest}" "${STEAM}" <<'PY'
+import pathlib
+import re
+import stat
+import sys
 
-if [[ "${steam_rc}" == "124" ]]; then
-    echo "ERROR: Steam bootstrap updater timed out" >&2
-    exit 1
-fi
+manifest = pathlib.Path(sys.argv[1])
+steam = pathlib.Path(sys.argv[2])
+missing = []
+mismatched = []
+not_directories = []
+not_symlinks = []
+file_entries = 0
+directory_entries = 0
+symlink_entries = 0
 
-if [[ ! -x "${STEAM}/steamrtarm64/steam" || ! -f "${STEAM}/steamrtarm64/steamui.so" ]]; then
+for line in manifest.read_text(errors="ignore").splitlines():
+    if re.fullmatch(r"(?:OSVER=-?\d+|VERSION=\d+|SHA1=[0-9A-Fa-f]{40})", line):
+        continue
+    match = re.fullmatch(r"(.+),(-?\d+);\d+;\d+", line)
+    if not match:
+        continue
+    relative = pathlib.Path(match.group(1))
+    path = steam / relative
+    expected = int(match.group(2))
+    if expected == -1:
+        directory_entries += 1
+        try:
+            path_stat = path.lstat()
+        except OSError as error:
+            missing.append(f"{relative}: {error.strerror}")
+            continue
+        if not stat.S_ISDIR(path_stat.st_mode):
+            not_directories.append(str(relative))
+        continue
+    if expected == -2:
+        symlink_entries += 1
+        try:
+            path_stat = path.lstat()
+        except OSError as error:
+            missing.append(f"{relative}: {error.strerror}")
+            continue
+        if not stat.S_ISLNK(path_stat.st_mode):
+            not_symlinks.append(str(relative))
+        continue
+    if expected < 0:
+        continue
+    file_entries += 1
+    try:
+        path_stat = path.stat()
+    except OSError as error:
+        missing.append(f"{relative}: {error.strerror}")
+        continue
+    if path_stat.st_size != expected:
+        mismatched.append(
+            f"{relative}: expected {expected}, got {path_stat.st_size}"
+        )
+
+if not file_entries + directory_entries + symlink_entries:
+    raise SystemExit("Steam manifest contains no entries")
+if missing or mismatched or not_directories or not_symlinks:
+    for item in missing[:20]:
+        print(f"missing: {item}", file=sys.stderr)
+    for item in mismatched[:20]:
+        print(f"size mismatch: {item}", file=sys.stderr)
+    for item in not_directories[:20]:
+        print(f"not a directory: {item}", file=sys.stderr)
+    for item in not_symlinks[:20]:
+        print(f"not a symlink: {item}", file=sys.stderr)
+    print(
+        f"Steam manifest check failed: {len(missing)} missing, "
+        f"{len(mismatched)} size mismatches, "
+        f"{len(not_directories)} invalid directories, "
+        f"{len(not_symlinks)} invalid symlinks",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+PY
+}
+
+steam_verified=false
+bootstrap_deadline=$((SECONDS + STEAM_BOOTSTRAP_TIMEOUT))
+for attempt in {1..3}; do
+    remaining_timeout=$((bootstrap_deadline - SECONDS))
+    if ((remaining_timeout <= 0)); then
+        break
+    fi
+    set +e
+    timeout "${remaining_timeout}" \
+        "${STEAM}/steamrtarm64/steam" \
+        -steamdeck \
+        -exitsteam \
+        >/tmp/armada-steam-bootstrap.stdout \
+        2>/tmp/armada-steam-bootstrap.stderr
+    steam_rc=$?
+    set -e
+
+    if [[ "${steam_rc}" == "124" ]]; then
+        echo "ERROR: Steam bootstrap exhausted its ${STEAM_BOOTSTRAP_TIMEOUT}-second timeout" >&2
+        break
+    fi
+
+    if [[ -x "${STEAM}/steamrtarm64/steam" \
+        && -f "${STEAM}/steamrtarm64/steamui.so" \
+        && -f "${installed_manifest}" ]] \
+        && verify_installed_manifest; then
+        steam_verified=true
+        break
+    fi
+    echo "Steam bootstrap attempt ${attempt} was incomplete (rc ${steam_rc})" >&2
+done
+
+if [[ "${steam_verified}" != "true" ]]; then
     echo "ERROR: Steam bootstrap did not produce a complete ARM64 Steam tree" >&2
-    exit 1
-fi
-
-if [[ ! -f "${installed_manifest}" ]]; then
-    echo "ERROR: Steam bootstrap produced no .installed manifest (last rc ${steam_rc}); the seed would re-install on first boot" >&2
     echo "--- last bootstrap stdout (tail) ---" >&2
     tail -n 30 /tmp/armada-steam-bootstrap.stdout >&2 || true
     echo "--- last bootstrap stderr (tail) ---" >&2
@@ -169,7 +262,11 @@ rm -f \
 
 # Steam opens Decky's localhost CEF debugger only when this marker exists.
 touch "${STEAM}/.cef-enable-remote-debugging"
+if ! verify_installed_manifest; then
+    echo "ERROR: Steam bootstrap cleanup removed manifest content" >&2
+    exit 1
+fi
 
 package_count=$(find "${STEAM}/package" -maxdepth 1 -type f | wc -l)
 zipvz_count=$(find "${STEAM}/package" -maxdepth 1 -type f -name '*.zip.vz.*' | wc -l)
-echo "Generated ARM64 Steam bootstrap: ${package_count} package files, ${zipvz_count} compressed payloads, updater rc ${steam_rc}, .installed present"
+echo "Generated ARM64 Steam bootstrap: ${package_count} package files, ${zipvz_count} compressed payloads, updater rc ${steam_rc}, manifest verified"
