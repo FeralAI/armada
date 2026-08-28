@@ -127,6 +127,53 @@ verify_installed_manifest() {
         "${installed_manifest}" "${STEAM}"
 }
 
+steam_processes() {
+    local pid state
+    # The full bootstrap path avoids matching unrelated Steam-named processes.
+    while read -r pid; do
+        state=$(ps -o stat= -p "${pid}" 2>/dev/null) || continue
+        state=${state//[[:space:]]/}
+        [[ "${state}" == Z* ]] || echo "${pid}"
+    done < <(pgrep -f "${STEAM_BOOTSTRAP_HOME}" || true)
+}
+
+show_steam_processes() {
+    local pid_list
+    printf -v pid_list '%s,' "$@"
+    ps -o pid=,ppid=,stat=,args= -p "${pid_list%,}" >&2 || true
+}
+
+quiesce_steam_processes() {
+    local -a steam_pids
+    mapfile -t steam_pids < <(steam_processes)
+    if ((${#steam_pids[@]} == 0)); then
+        echo "No Steam bootstrap helpers remained after updater exit"
+        return
+    fi
+
+    echo "Stopping Steam bootstrap helpers after updater exit:" >&2
+    show_steam_processes "${steam_pids[@]}"
+    kill "${steam_pids[@]}" 2>/dev/null || true
+    for _ in {1..50}; do
+        mapfile -t steam_pids < <(steam_processes)
+        ((${#steam_pids[@]} == 0)) && return 0
+        sleep 0.1
+    done
+
+    echo "Steam bootstrap helpers survived SIGTERM; sending SIGKILL:" >&2
+    show_steam_processes "${steam_pids[@]}"
+    kill -KILL "${steam_pids[@]}" 2>/dev/null || true
+    for _ in {1..20}; do
+        mapfile -t steam_pids < <(steam_processes)
+        ((${#steam_pids[@]} == 0)) && return 0
+        sleep 0.1
+    done
+
+    echo "ERROR: Steam bootstrap helpers survived SIGKILL" >&2
+    show_steam_processes "${steam_pids[@]}"
+    return 1
+}
+
 steam_verified=false
 bootstrap_deadline=$((SECONDS + STEAM_BOOTSTRAP_TIMEOUT))
 for attempt in {1..3}; do
@@ -143,6 +190,7 @@ for attempt in {1..3}; do
         2>/tmp/armada-steam-bootstrap.stderr
     steam_rc=$?
     set -e
+    quiesce_steam_processes
 
     if [[ "${steam_rc}" == "124" ]]; then
         echo "ERROR: Steam bootstrap exhausted its ${STEAM_BOOTSTRAP_TIMEOUT}-second timeout" >&2
