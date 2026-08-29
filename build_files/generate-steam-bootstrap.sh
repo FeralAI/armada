@@ -19,6 +19,7 @@ STEAM_ARM_CDN="https://client-update.steamstatic.com"
 STEAM_ARM_MANIFEST_NAME="steam_client_${STEAM_ARM_CHANNEL}_linuxarm64"
 STEAM_ARM_MANIFEST_URL="${STEAM_ARM_CDN}/${STEAM_ARM_MANIFEST_NAME}"
 STEAM_BOOTSTRAP_TIMEOUT="${STEAM_BOOTSTRAP_TIMEOUT:-900}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 rm -rf "${STEAM_BOOTSTRAP_HOME}"
 mkdir -p "${STEAM}/package" "${DOT_STEAM}"
@@ -122,84 +123,8 @@ export LD_LIBRARY_PATH="${STEAM}/steamrtarm64:${STEAM}/lib/aarch64-linux-gnu"
 installed_manifest="${STEAM}/package/${STEAM_ARM_MANIFEST_NAME}.installed"
 
 verify_installed_manifest() {
-    python3 - "${installed_manifest}" "${STEAM}" <<'PY'
-import pathlib
-import re
-import stat
-import sys
-
-manifest = pathlib.Path(sys.argv[1])
-steam = pathlib.Path(sys.argv[2])
-missing = []
-mismatched = []
-not_directories = []
-not_symlinks = []
-file_entries = 0
-directory_entries = 0
-symlink_entries = 0
-
-for line in manifest.read_text(errors="ignore").splitlines():
-    if re.fullmatch(r"(?:OSVER=-?\d+|VERSION=\d+|SHA1=[0-9A-Fa-f]{40})", line):
-        continue
-    match = re.fullmatch(r"(.+),(-?\d+);\d+;\d+", line)
-    if not match:
-        continue
-    relative = pathlib.Path(match.group(1))
-    path = steam / relative
-    expected = int(match.group(2))
-    if expected == -1:
-        directory_entries += 1
-        try:
-            path_stat = path.lstat()
-        except OSError as error:
-            missing.append(f"{relative}: {error.strerror}")
-            continue
-        if not stat.S_ISDIR(path_stat.st_mode):
-            not_directories.append(str(relative))
-        continue
-    if expected == -2:
-        symlink_entries += 1
-        try:
-            path_stat = path.lstat()
-        except OSError as error:
-            missing.append(f"{relative}: {error.strerror}")
-            continue
-        if not stat.S_ISLNK(path_stat.st_mode):
-            not_symlinks.append(str(relative))
-        continue
-    if expected < 0:
-        continue
-    file_entries += 1
-    try:
-        path_stat = path.stat()
-    except OSError as error:
-        missing.append(f"{relative}: {error.strerror}")
-        continue
-    if path_stat.st_size != expected:
-        mismatched.append(
-            f"{relative}: expected {expected}, got {path_stat.st_size}"
-        )
-
-if not file_entries + directory_entries + symlink_entries:
-    raise SystemExit("Steam manifest contains no entries")
-if missing or mismatched or not_directories or not_symlinks:
-    for item in missing[:20]:
-        print(f"missing: {item}", file=sys.stderr)
-    for item in mismatched[:20]:
-        print(f"size mismatch: {item}", file=sys.stderr)
-    for item in not_directories[:20]:
-        print(f"not a directory: {item}", file=sys.stderr)
-    for item in not_symlinks[:20]:
-        print(f"not a symlink: {item}", file=sys.stderr)
-    print(
-        f"Steam manifest check failed: {len(missing)} missing, "
-        f"{len(mismatched)} size mismatches, "
-        f"{len(not_directories)} invalid directories, "
-        f"{len(not_symlinks)} invalid symlinks",
-        file=sys.stderr,
-    )
-    raise SystemExit(1)
-PY
+    python3 "${script_dir}/verify-steam-bootstrap.py" \
+        "${installed_manifest}" "${STEAM}"
 }
 
 steam_verified=false
