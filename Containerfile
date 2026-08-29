@@ -37,6 +37,7 @@ FROM ${EXTEST_PKG} AS extest
 FROM ${ARMADA_SPLASH_PKG} AS armada-splash
 FROM ${ARMADA_RGB_PKG} AS armada-rgb
 FROM ${UMTP_RESPONDER_PKG} AS umtp-responder
+FROM ${CHUNKAH_IMAGE} AS chunkah-tools
 
 FROM docker.io/library/node:22-slim AS decky-build
 WORKDIR /build/armada-control
@@ -90,19 +91,33 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 
 RUN bootc container lint
 
-FROM ${CHUNKAH_IMAGE} AS chunkah
+# Chunk directly from the live rootfs because cross-stage mounts can omit recent writes.
 ARG CHUNKAH_CONFIG_STR
-RUN --mount=from=armada-rootfs,target=/chunkah,ro \
+RUN --network=none \
+    --mount=type=bind,from=chunkah-tools,source=/,target=/run/chunkah-tools,ro \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     /bin/bash -o pipefail -c ' \
         set -e; \
+        [ -n "${CHUNKAH_CONFIG_STR}" ] || { echo "CHUNKAH_CONFIG_STR unset; skipping chunking"; exit 0; }; \
+        if grep -Eq "[[:space:]]/etc/(hosts|resolv\.conf|hostname)[[:space:]]" /proc/self/mounts; then \
+            echo "ERROR: runtime binds shadow /etc; refusing to pack them" >&2; exit 1; \
+        fi; \
+        python3 /ctx/build_files/verify-steam-bootstrap.py \
+            /var/home/armada/.local/share/Steam/package/steam_client_steamdeck_publicbeta_linuxarm64.installed \
+            /var/home/armada/.local/share/Steam; \
         start=${SECONDS}; \
-        chunkah build --verbose --compressed --compression-level 6 \
+        /run/chunkah-tools/usr/bin/chunkah build --verbose --compressed --compression-level 6 \
             --arch arm64 --max-layers 128 --source-date-epoch 0 \
+            --rootfs / \
             --prune /sysroot/ \
+            --prune /proc/ --prune /sys/ --prune /dev/ --prune /run/ --prune /tmp/ --prune /ctx/ \
             --label ostree.commit- --label ostree.final-diffid- \
             --config-str "${CHUNKAH_CONFIG_STR}" \
             --output oci:/run/src/chunked 2>&1 | tee /run/src/chunkah.log; \
         echo "Chunkah completed in $((SECONDS - start)) seconds" \
     '
+
+FROM chunkah-tools AS chunkah
+RUN test -s /run/src/chunked/index.json
 
 FROM armada-rootfs AS armada
