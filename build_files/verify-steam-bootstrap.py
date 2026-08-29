@@ -89,7 +89,7 @@ def find_steam_layer(layout):
         raise SystemExit("OCI index does not reference an image manifest")
     manifest_member_name = f"{STEAM_PREFIX}/package/{MANIFEST_NAME}"
 
-    # Chunkah packs the xattr-defined Steam component atomically into one layer.
+    # The Steam component xattr keeps its manifest and content in one layer.
     for layer in image_manifest["layers"]:
         members = {}
         manifest_contents = None
