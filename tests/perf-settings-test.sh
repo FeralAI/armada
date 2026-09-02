@@ -305,7 +305,7 @@ check("device-env SM8750 prime", odin3.get("ARMADA_PRIME_CORES") == "6-7")
 check("device-env SM8750 irq unrestricted", odin3.get("ARMADA_IRQ_CORES") == "''")
 check("device-env non-SM8250 Proton defaults",
       odin3.get("ARMADA_PROTON_DEFAULTS") ==
-      "proton-experimental-arm64:proton-stable-arm64:proton-cachyos-11.0-arm64")
+      "proton-experimental-arm64:proton_11-arm64:proton-cachyos-11.0-arm64")
 thor = run_device_env("AYN Thor")
 check("device-env SM8550 irq littles", thor.get("ARMADA_IRQ_CORES") == "0-2")
 thor_override = run_device_env("AYN Thor", {"ARMADA_IRQ_CORES": ""})
@@ -631,6 +631,44 @@ try:
     check("oversize tweaks rejected", False)
 except ValueError:
     pass
+
+plugin_tweaks.COMPAT_APPLIED_STATE = pathlib.Path(WORK) / "compat-applied.json"
+legacy_state = plugin_tweaks.load_compat_applied()
+check("missing compat state is normalized",
+      legacy_state == {"appids": [], "protonDefault": ""})
+plugin_tweaks.COMPAT_APPLIED_STATE.write_text(
+    json.dumps({"appids": ["620"]}), encoding="utf-8")
+legacy_state = plugin_tweaks.load_compat_applied()
+check("legacy compat state has no recorded factory default",
+      legacy_state == {"appids": ["620"], "protonDefault": ""})
+plugin_tweaks.COMPAT_APPLIED_STATE.write_text(json.dumps({
+    "appids": ["620", 620, "bad"],
+    "protonDefault": "proton-cachyos-11.0-arm64",
+}), encoding="utf-8")
+loaded_state = plugin_tweaks.load_compat_applied()
+check("compat state loads appids and factory default",
+      loaded_state == {"appids": ["620"],
+                       "protonDefault": "proton-cachyos-11.0-arm64"})
+compat_writes = []
+real_plugin_call = plugin_tweaks.call
+plugin_tweaks.call = lambda action, **payload: compat_writes.append((action, payload))
+try:
+    saved_state = plugin_tweaks.save_compat_applied(["9", "2", "bad"])
+    saved_payload = json.loads(compat_writes[-1][1]["text"])
+    check("appid-only save preserves factory default",
+          saved_state == saved_payload == {
+              "appids": ["2", "9"],
+              "protonDefault": "proton-cachyos-11.0-arm64",
+          })
+    saved_state = plugin_tweaks.save_compat_applied(["9"], "proton-experimental-arm64")
+    saved_payload = json.loads(compat_writes[-1][1]["text"])
+    check("startup save advances factory default",
+          saved_state == saved_payload == {
+              "appids": ["9"],
+              "protonDefault": "proton-experimental-arm64",
+          })
+finally:
+    plugin_tweaks.call = real_plugin_call
 
 # --- plugin: power render with editable governor ----------------------------
 sys.path.insert(0, os.path.join(ROOT, "decky/armada-control/py_modules"))

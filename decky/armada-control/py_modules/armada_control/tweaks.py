@@ -69,15 +69,25 @@ def load_compat_applied():
         with COMPAT_APPLIED_STATE.open(encoding="utf-8") as f:
             loaded = json.load(f)
     except (OSError, ValueError):
-        return []
+        loaded = {}
     appids = loaded.get("appids") if isinstance(loaded, dict) else None
     if not isinstance(appids, list):
-        return []
-    return sorted({str(appid) for appid in appids if str(appid).isdigit()}, key=int)
+        appids = []
+    proton_default = loaded.get("protonDefault") if isinstance(loaded, dict) else ""
+    return {
+        "appids": sorted({str(appid) for appid in appids if str(appid).isdigit()}, key=int),
+        "protonDefault": proton_default if isinstance(proton_default, str) else "",
+    }
 
 
-def save_compat_applied(appids):
+def save_compat_applied(appids, proton_default=None):
     clean = sorted({str(appid) for appid in appids if str(appid).isdigit()}, key=int)
-    text = json.dumps({"appids": clean}, indent=2, sort_keys=True) + "\n"
+    if proton_default is None:
+        proton_default = load_compat_applied()["protonDefault"]
+    state = {
+        "appids": clean,
+        "protonDefault": proton_default if isinstance(proton_default, str) else "",
+    }
+    text = json.dumps(state, indent=2, sort_keys=True) + "\n"
     call("write_config", name="compat-applied", text=text)
-    return clean
+    return state

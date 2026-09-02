@@ -35,6 +35,11 @@ export interface Tweaks {
   games: Record<string, GameTweak>;
 }
 
+export interface CompatAppliedState {
+  appids: string[];
+  protonDefault: string;
+}
+
 export interface InstalledGame {
   appid: string;
   name: string;
