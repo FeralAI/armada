@@ -95,6 +95,7 @@ export interface Config {
   perf?: PerfInfo;
   cpuDeviceClass: string;
   rgbSupported: boolean;
+  protonDefaults: string[];
   osVersion: string;
   ablVersion: string;
   ablAutoEnabled: boolean;

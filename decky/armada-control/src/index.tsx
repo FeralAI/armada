@@ -24,6 +24,7 @@ export default definePlugin(() => {
         config.tweaks?.global?.windowsCompatTool,
         handled.loaded && config.tweaks?.global?.autoApplyCompat !== false,
         handled.appids,
+        config.protonDefaults,
       );
       const persist = handled.loaded ? persistHandledGames : () => {};
       unregisterDownloadWatcher = registerDownloadWatcher(persist);
