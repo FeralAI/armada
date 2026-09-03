@@ -39,6 +39,8 @@ DESKTOP_SESSION_PATH = Path("/etc/armada/desktop-session")
 DESKTOP_MODES = {"desktop", "mobile"}
 BOTTOM_SCREEN_SERVICE = "armada-bottom-screen.service"
 GAME_MODE_SERVICE = "gamescope-session-plus@steam.service"
+BACKLIGHT_ROOT = Path("/sys/class/backlight")
+DEVICE_ENV = os.environ.get("ARMADA_DEVICE_ENV", "/usr/libexec/armada/device-env")
 CONFIG_PATHS = {
     "power": Path("/etc/armada/power-profiles.conf"),
     "tweaks": Path("/etc/armada/game-tweaks.json"),
@@ -187,7 +189,7 @@ def abl_auto_enabled():
 
 
 def device_env():
-    result = subprocess.check_output(["/usr/libexec/armada/device-env"], text=True, timeout=5)
+    result = subprocess.check_output([DEVICE_ENV], text=True, timeout=5)
     env = {}
     for line in result.splitlines():
         if "=" not in line:
@@ -233,6 +235,30 @@ def bottom_screen_enabled():
     return session_systemctl(
         "is-enabled", "--quiet", BOTTOM_SCREEN_SERVICE, check=False, timeout=5,
     ).returncode == 0
+
+
+def secondary_backlight():
+    name = device_env().get("ARMADA_SECONDARY_BACKLIGHT", "")
+    if not name or name in {".", ".."} or "/" in name:
+        return None
+    path = BACKLIGHT_ROOT / name
+    if not path.is_dir():
+        return None
+    return path
+
+
+def bottom_screen_brightness():
+    path = secondary_backlight()
+    if path is None:
+        return None
+    try:
+        brightness = int((path / "brightness").read_text().strip())
+        maximum = int((path / "max_brightness").read_text().strip())
+    except (OSError, ValueError):
+        return None
+    if maximum <= 0:
+        return None
+    return max(0, min(100, round(brightness * 100 / maximum)))
 
 
 def abl_version():
@@ -345,6 +371,34 @@ def action_get_device_env(request):
 
 def action_get_bottom_screen_enabled(request):
     return {"enabled": bottom_screen_enabled()}
+
+
+def action_get_bottom_screen_brightness(request):
+    brightness = bottom_screen_brightness()
+    return {"supported": brightness is not None, "brightness": brightness or 0}
+
+
+def action_set_bottom_screen_brightness(request):
+    brightness = request.get("brightness")
+    if not isinstance(brightness, int) or isinstance(brightness, bool) or not 0 <= brightness <= 100:
+        raise ValueError("invalid bottom-screen brightness")
+
+    path = secondary_backlight()
+    if path is None:
+        raise RuntimeError("bottom-screen brightness is not supported on this device")
+    try:
+        maximum = int((path / "max_brightness").read_text().strip())
+        if maximum <= 0:
+            raise ValueError
+        value = round(brightness * maximum / 100)
+        (path / "brightness").write_text(f"{value}\n")
+    except (OSError, ValueError) as error:
+        raise RuntimeError("could not update bottom-screen brightness") from error
+
+    applied = bottom_screen_brightness()
+    if applied is None:
+        raise RuntimeError("could not read bottom-screen brightness")
+    return {"brightness": applied}
 
 
 def action_set_bottom_screen_enabled(request):
@@ -620,6 +674,7 @@ ACTIONS = {
     "get_controller_type": action_get_controller_type,
     "get_device_env": action_get_device_env,
     "get_bottom_screen_enabled": action_get_bottom_screen_enabled,
+    "get_bottom_screen_brightness": action_get_bottom_screen_brightness,
     "get_abl_version": action_get_abl_version,
     "get_rgb": action_get_rgb,
     "set_rgb": action_set_rgb,
@@ -630,6 +685,7 @@ ACTIONS = {
     "set_ssh_enabled": action_set_ssh_enabled,
     "set_mtp_enabled": action_set_mtp_enabled,
     "set_bottom_screen_enabled": action_set_bottom_screen_enabled,
+    "set_bottom_screen_brightness": action_set_bottom_screen_brightness,
     "set_abl_auto_enabled": action_set_abl_auto_enabled,
     "get_desktop_mode": action_get_desktop_mode,
     "set_desktop_mode": action_set_desktop_mode,
