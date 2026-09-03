@@ -1,0 +1,12 @@
+[Unit]
+Description=Armada bottom-screen Plasma session
+PartOf=gamescope-session-plus@steam.service
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/bin/armada-run-bottom -- /usr/libexec/armada/bottom-screen-session
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=gamescope-session-plus@steam.service
