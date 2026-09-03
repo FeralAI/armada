@@ -104,6 +104,8 @@ export interface Config {
   osVersion: string;
   ablVersion: string;
   ablAutoEnabled: boolean;
+  bottomScreenSupported: boolean;
+  bottomScreenEnabled: boolean;
   sshEnabled: boolean;
   mtpEnabled: boolean;
   desktopMode: string;

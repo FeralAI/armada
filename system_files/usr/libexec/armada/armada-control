@@ -2,6 +2,7 @@
 import grp
 import json
 import os
+import pwd
 import selectors
 import shlex
 import socket
@@ -36,6 +37,8 @@ NM_IGNORE_SLEEP = Path("/etc/NetworkManager/ignore-sleep")
 MEM_SLEEP_PATH = Path("/sys/power/mem_sleep")
 DESKTOP_SESSION_PATH = Path("/etc/armada/desktop-session")
 DESKTOP_MODES = {"desktop", "mobile"}
+BOTTOM_SCREEN_SERVICE = "armada-bottom-screen.service"
+GAME_MODE_SERVICE = "gamescope-session-plus@steam.service"
 CONFIG_PATHS = {
     "power": Path("/etc/armada/power-profiles.conf"),
     "tweaks": Path("/etc/armada/game-tweaks.json"),
@@ -197,6 +200,41 @@ def device_env():
     return env
 
 
+def bottom_screen_supported():
+    env = device_env()
+    return bool(
+        env.get("ARMADA_SECONDARY_CONNECTOR")
+        and env.get("ARMADA_SECONDARY_TOUCHSCREEN")
+    )
+
+
+def session_systemctl(*args, check=True, timeout=30):
+    user = os.environ.get("ARMADA_SESSION_USER", "armada")
+    account = pwd.getpwnam(user)
+    result = subprocess.run(
+        [
+            "/usr/bin/runuser", "-u", user, "--", "env",
+            f"HOME={account.pw_dir}",
+            f"XDG_RUNTIME_DIR=/run/user/{account.pw_uid}",
+            f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{account.pw_uid}/bus",
+            "/usr/bin/systemctl", "--user", *args,
+        ],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=timeout,
+    )
+    if check and result.returncode != 0:
+        raise RuntimeError("could not update bottom-screen service")
+    return result
+
+
+def bottom_screen_enabled():
+    return session_systemctl(
+        "is-enabled", "--quiet", BOTTOM_SCREEN_SERVICE, check=False, timeout=5,
+    ).returncode == 0
+
+
 def abl_version():
     versions = []
     for name, partition in ABL_PARTITIONS:
@@ -303,6 +341,30 @@ def action_get_abl_auto_enabled(request):
 
 def action_get_device_env(request):
     return {"env": device_env()}
+
+
+def action_get_bottom_screen_enabled(request):
+    return {"enabled": bottom_screen_enabled()}
+
+
+def action_set_bottom_screen_enabled(request):
+    enabled = request.get("enabled")
+    if not isinstance(enabled, bool):
+        raise ValueError("invalid bottom-screen enabled state")
+    if enabled and not bottom_screen_supported():
+        raise RuntimeError("bottom screen is not supported on this device")
+
+    if enabled:
+        session_systemctl("enable", BOTTOM_SCREEN_SERVICE)
+        game_mode = session_systemctl(
+            "is-active", "--quiet", GAME_MODE_SERVICE, check=False, timeout=5,
+        )
+        if game_mode.returncode == 0:
+            session_systemctl("start", BOTTOM_SCREEN_SERVICE)
+    else:
+        session_systemctl("disable", "--now", BOTTOM_SCREEN_SERVICE)
+
+    return {"enabled": bottom_screen_enabled()}
 
 
 def action_get_abl_version(request):
@@ -557,6 +619,7 @@ ACTIONS = {
     "set_controller_type": action_set_controller_type,
     "get_controller_type": action_get_controller_type,
     "get_device_env": action_get_device_env,
+    "get_bottom_screen_enabled": action_get_bottom_screen_enabled,
     "get_abl_version": action_get_abl_version,
     "get_rgb": action_get_rgb,
     "set_rgb": action_set_rgb,
@@ -566,6 +629,7 @@ ACTIONS = {
     "inputplumber_intercept": action_inputplumber_intercept,
     "set_ssh_enabled": action_set_ssh_enabled,
     "set_mtp_enabled": action_set_mtp_enabled,
+    "set_bottom_screen_enabled": action_set_bottom_screen_enabled,
     "set_abl_auto_enabled": action_set_abl_auto_enabled,
     "get_desktop_mode": action_get_desktop_mode,
     "set_desktop_mode": action_set_desktop_mode,

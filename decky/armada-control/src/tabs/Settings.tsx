@@ -3,6 +3,7 @@ import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import type { Dispatch, SetStateAction } from "react";
 import {
   setAblAutoEnabled as applyAblAutoEnabled,
+  setBottomScreenEnabled as applyBottomScreenEnabled,
   setControllerType as applyControllerType,
   setMtpEnabled as applyMtpEnabled,
   setDesktopMode as applyDesktopMode,
@@ -63,6 +64,19 @@ export function Settings({ config, setConfig }: {
       setConfig((current) => (current ? { ...current, ablAutoEnabled: !enabled } : current));
     }
   };
+  const setBottomScreenEnabled = async (enabled: boolean) => {
+    if (enabled === !!config.bottomScreenEnabled) {
+      return;
+    }
+    setConfig((current) => (current ? { ...current, bottomScreenEnabled: enabled } : current));
+    try {
+      const applied = await applyBottomScreenEnabled(enabled);
+      setConfig((current) => (current ? { ...current, bottomScreenEnabled: applied } : current));
+    } catch (error) {
+      setConfig((current) => (current ? { ...current, bottomScreenEnabled: !enabled } : current));
+      toaster.toast({ title: "Could not change bottom screen", body: String(error) });
+    }
+  };
   const setDesktopMode = async (value: string) => {
     const previous = config.desktopMode || "desktop";
     setConfig((current: Config | null) => (current ? { ...current, desktopMode: value } : current));
@@ -108,6 +122,14 @@ export function Settings({ config, setConfig }: {
         <Field label="ABL Version" description={config.ablVersion || "unknown"} />
       </PanelSection>
       <PanelSection title="Experimental">
+        {config.bottomScreenSupported && (
+          <ToggleRow
+            label="Bottom Screen"
+            description="Run Plasma Mobile on the second display"
+            value={!!config.bottomScreenEnabled}
+            onChange={setBottomScreenEnabled}
+          />
+        )}
         {(config.desktopModes?.length || 0) > 1 && (
           <SelectEdit
             label="Desktop Mode"

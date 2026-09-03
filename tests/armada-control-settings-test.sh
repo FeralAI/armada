@@ -29,9 +29,71 @@ control.NM_IGNORE_SLEEP = work / "ignore-sleep"
 control.MEM_SLEEP_PATH = work / "mem_sleep"
 control.MEM_SLEEP_PATH.write_text("[s2idle] deep\n")
 
+
+class Result:
+    def __init__(self, returncode):
+        self.returncode = returncode
+
+
+unit_state = {"enabled": False, "game_mode": True}
+systemctl_calls = []
+
+
+def fake_session_systemctl(*args, check=True, timeout=30):
+    systemctl_calls.append(args)
+    if args[:2] == ("is-enabled", "--quiet"):
+        return Result(0 if unit_state["enabled"] else 1)
+    if args[:2] == ("is-active", "--quiet"):
+        return Result(0 if unit_state["game_mode"] else 3)
+    if args[0] == "enable":
+        unit_state["enabled"] = True
+    elif args[0] == "disable":
+        unit_state["enabled"] = False
+    return Result(0)
+
+
+control.session_systemctl = fake_session_systemctl
+control.device_env = lambda: {
+    "ARMADA_SECONDARY_CONNECTOR": "DSI-1",
+    "ARMADA_SECONDARY_TOUCHSCREEN": "bottom_touchscreen",
+}
+assert control.action_get_bottom_screen_enabled({}) == {"enabled": False}
+assert control.action_set_bottom_screen_enabled({"enabled": True}) == {"enabled": True}
+assert ("enable", control.BOTTOM_SCREEN_SERVICE) in systemctl_calls
+assert ("start", control.BOTTOM_SCREEN_SERVICE) in systemctl_calls
+assert control.action_set_bottom_screen_enabled({"enabled": False}) == {"enabled": False}
+assert ("disable", "--now", control.BOTTOM_SCREEN_SERVICE) in systemctl_calls
+
+unit_state["game_mode"] = False
+systemctl_calls.clear()
+assert control.action_set_bottom_screen_enabled({"enabled": True}) == {"enabled": True}
+assert ("start", control.BOTTOM_SCREEN_SERVICE) not in systemctl_calls
+control.action_set_bottom_screen_enabled({"enabled": False})
+
+control.device_env = lambda: {}
+try:
+    control.action_set_bottom_screen_enabled({"enabled": True})
+except RuntimeError:
+    pass
+else:
+    raise AssertionError("unsupported bottom screen was enabled")
+
+try:
+    control.action_set_bottom_screen_enabled({"enabled": "yes"})
+except ValueError:
+    pass
+else:
+    raise AssertionError("invalid bottom-screen state was accepted")
+
 plugin_lib = root / "decky/armada-control/py_modules"
 sys.path.insert(0, str(plugin_lib))
 from armada_control import system as plugin_system
+
+plugin_system.call = lambda action, **payload: {
+    "enabled": action == "get_bottom_screen_enabled" or bool(payload.get("enabled")),
+}
+assert plugin_system.bottom_screen_enabled()
+assert plugin_system.set_bottom_screen_enabled(True)
 
 plugin_system.MEM_SLEEP_PATH = control.MEM_SLEEP_PATH
 assert plugin_system.sleep_modes() == [

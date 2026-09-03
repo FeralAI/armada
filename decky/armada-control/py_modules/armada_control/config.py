@@ -4,6 +4,7 @@ from .steam import installed_games
 from .system import (
     abl_auto_enabled,
     abl_version,
+    bottom_screen_enabled,
     device_env,
     mtp_enabled,
     os_version,
@@ -36,6 +37,10 @@ def build_config(include_games=True):
         "osVersion": os_version(),
         "ablVersion": abl_version(),
         "ablAutoEnabled": abl_auto_enabled(),
+        "bottomScreenSupported": bool(
+            env.get("ARMADA_SECONDARY_CONNECTOR") and env.get("ARMADA_SECONDARY_TOUCHSCREEN")
+        ),
+        "bottomScreenEnabled": bottom_screen_enabled(),
         "sshEnabled": ssh_enabled(),
         "mtpEnabled": mtp_enabled(),
         "desktopMode": desktop_mode(),
