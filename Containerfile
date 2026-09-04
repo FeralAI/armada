@@ -7,6 +7,7 @@ ARG GAMESCOPE_PKG=ghcr.io/armada-os/armada-packages/gamescope@sha256:211034427eb
 ARG GAMESCOPE_SESSION_PKG=ghcr.io/armada-os/armada-packages/gamescope-session@sha256:f75cfa6fefd69ba9f8496fa0e528aee3bf489e71bde53acef8d02c3bd311f396
 ARG GAMESCOPE_SESSION_STEAM_PKG=ghcr.io/armada-os/armada-packages/gamescope-session-steam@sha256:bd9abba8a51c5aad9dd8fb8b1ed4ecf55b7fd26268772658603d73953231a2cf
 ARG KWIN_PKG=ghcr.io/armada-os/armada-packages/kwin@sha256:515e14f78f19d2abd3f3b73915e260f4b26cf9a0f84dbe55a06bbcb5f9e8ddce
+ARG PLASMA_MOBILE_PKG=ghcr.io/armada-os/armada-packages/plasma-mobile@sha256:81c08a4ac34f1ffabdd59b89934cc858e47cf6dfe1f0390c0650e397b0919a30
 ARG POWERDEVIL_PKG=ghcr.io/armada-os/armada-packages/powerdevil@sha256:538904e7895bbe6a3aed0ce1a1122d282fa80f64d650845bf3d606754207f5ca
 ARG KERNEL_PKG=ghcr.io/armada-os/armada-packages/kernel@sha256:55d6b4e05cc55c0bfd76c28233d8a49192ce23857d51a6003c29cdcda42664fa
 ARG INPUTPLUMBER_PKG=ghcr.io/armada-os/armada-packages/inputplumber@sha256:894bcb70919f6182c1b1c3ada40c7389d0ffee4b92d9b7a7088a62f540503f6b
@@ -26,6 +27,7 @@ FROM ${GAMESCOPE_PKG} AS gamescope
 FROM ${GAMESCOPE_SESSION_PKG} AS gamescope-session
 FROM ${GAMESCOPE_SESSION_STEAM_PKG} AS gamescope-session-steam
 FROM ${KWIN_PKG} AS kwin
+FROM ${PLASMA_MOBILE_PKG} AS plasma-mobile
 FROM ${POWERDEVIL_PKG} AS powerdevil
 FROM ${KERNEL_PKG} AS kernel
 FROM ${INPUTPLUMBER_PKG} AS inputplumber
@@ -68,6 +70,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=gamescope-session,source=/rpms,target=/packages/gamescope-session \
     --mount=type=bind,from=gamescope-session-steam,source=/rpms,target=/packages/gamescope-session-steam \
     --mount=type=bind,from=kwin,source=/rpms,target=/packages/kwin \
+    --mount=type=bind,from=plasma-mobile,source=/rpms,target=/packages/plasma-mobile \
     --mount=type=bind,from=powerdevil,source=/rpms,target=/packages/powerdevil \
     --mount=type=bind,from=kernel,source=/kernel,target=/packages/kernel \
     --mount=type=bind,from=inputplumber,source=/rpms,target=/packages/inputplumber \
