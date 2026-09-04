@@ -204,7 +204,7 @@ env ARMADA_DEVICE_DIR="$ROOT/system_files/usr/lib/armada/devices" \
     ARMADA_MODEL="AYANEO Pocket DS" ARMADA_SLEEP_CONFIG="$WORK/sleep.conf" \
     ARMADA_MEM_SLEEP_PATH="$WORK/mem_sleep" \
     "$ROOT/system_files/usr/libexec/armada/device-env" |
-    grep -Fx 'ARMADA_SECONDARY_BACKLIGHT=ae96000.dsi.0' >/dev/null
+    grep -Fx 'ARMADA_SECONDARY_BACKLIGHT=sy7758-backlight' >/dev/null
 
 printf '[s2idle] deep\n' >"$WORK/mem_sleep"
 printf 'suspend_mode=s2idle\n' >"$WORK/sleep.conf"
