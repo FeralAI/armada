@@ -273,7 +273,7 @@ export function Content() {
             tone="destructive"
             onSelected={() => run(backend.resetConfig(app.id), () => toast(app.name, "Configuration reset, previous kept as .bak"))}
           >
-            Reset configuration
+            Reset Configuration
           </MenuItem>,
         );
       }
