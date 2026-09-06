@@ -79,7 +79,7 @@ printf '%s\n' \
     '#!/usr/bin/env bash' \
     '[[ "$(readlink "$XDG_CONFIG_HOME/plasmashellrc")" == plasmashellrc.mobile ]] || exit 1' \
     '[[ -f "$XDG_CONFIG_HOME/plasmashellrc.mobile" ]] || exit 1' \
-    'printf '\''%s\n'\'' "${XDG_CURRENT_DESKTOP-unset}" "${XDG_CONFIG_DIRS-unset}" "${DISABLE_GAMESCOPE_WSI-unset}" "${GAMESCOPE_WAYLAND_DISPLAY-unset}" "${GAMESCOPE_LIMITER_FILE-unset}" >"$INNER_ENV"' \
+    'printf '\''%s\n'\'' "${XDG_CURRENT_DESKTOP-unset}" "${XDG_CONFIG_DIRS-unset}" "${QT_QPA_PLATFORMTHEME-unset}" "${QT_QUICK_CONTROLS_STYLE-unset}" "${QT_QUICK_CONTROLS_MOBILE-unset}" "${PLASMA_INTEGRATION_USE_PORTAL-unset}" "${PLASMA_PLATFORM-unset}" "${DISABLE_GAMESCOPE_WSI-unset}" "${GAMESCOPE_WAYLAND_DISPLAY-unset}" "${GAMESCOPE_LIMITER_FILE-unset}" >"$INNER_ENV"' \
     'printf '\''%s\0'\'' "$@" >"$INNER_ARGS"' \
     >"$dbus_run_session"
 chmod +x "$dbus_run_session"
@@ -116,7 +116,7 @@ expected=(
 for i in "${!expected[@]}"; do
     [[ "${actual[$i]}" == "${expected[$i]}" ]]
 done
-[[ "$(<"$inner_env")" == $'KDE\n/test/home/.config/plasma-mobile:/etc/xdg:/test/config\n1\nunset\nunset' ]]
+[[ "$(<"$inner_env")" == $'KDE\n/test/home/.config/plasma-mobile:/etc/xdg:/test/config\nKDE\norg.kde.breeze\ntrue\n1\nphone:handset\n1\nunset\nunset' ]]
 [[ ! " ${actual[*]} " =~ ' --width ' ]]
 [[ ! " ${actual[*]} " =~ ' --height ' ]]
 
