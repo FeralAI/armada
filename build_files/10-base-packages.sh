@@ -112,6 +112,7 @@ dnf5 -y install --setopt=install_weak_deps=False \
     plasma-workspace \
     plasma-desktop \
     plasma-mobile \
+    plasma-settings \
     plasma-pa \
     plasma-nm \
     bluedevil \
@@ -125,6 +126,7 @@ dnf5 -y install --setopt=install_weak_deps=False \
     waydroid \
     kscreen \
     konsole \
+    qmlkonsole \
     dolphin \
     ark \
     gwenview \
