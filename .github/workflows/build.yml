@@ -141,6 +141,12 @@ jobs:
           echo "base_image=${base_image}" >> "${GITHUB_OUTPUT}"
           echo "config=${config}" >> "${GITHUB_OUTPUT}"
 
+      - name: Require native OverlayFS
+        run: |
+          set -euxo pipefail
+          buildah info --storage-opt=overlay.mount_program= |
+            jq -e '.store.GraphStatus["Native Overlay Diff"] == "true"'
+
       - name: Build Image
         id: build_image
         uses: redhat-actions/buildah-build@5d8479758cc72ed82df28daba521d27e20ff8c8a # v3.0.0
@@ -160,6 +166,7 @@ jobs:
             --target=chunkah
             --volume=${{ runner.temp }}:/run/src
             --security-opt=label=disable
+            --storage-opt=overlay.mount_program=
           oci: false
 
       - name: Validate Chunkah output
@@ -202,6 +209,8 @@ jobs:
               (.config.Labels | has("ostree.commit") | not) and
               (.config.Labels | has("ostree.final-diffid") | not)' \
             "${CHUNKAH_IMAGE_CONFIG_FILE}"
+          python3 build_files/verify-steam-bootstrap.py --oci "${RUNNER_TEMP}/chunked"
+          echo "Steam bootstrap manifest verified in Chunkah output"
           jq '{layers: (.layers | length), compressed_bytes: ([.layers[].size] | add)}' \
             "${CHUNKAH_MANIFEST_FILE}"
           echo "ref=${CHUNKED_REF}" >> "${GITHUB_OUTPUT}"
