@@ -132,7 +132,8 @@ case "${1:-}" in
     *) echo "usage: $0 {switch-desktop|switch-gamemode|default-gamemode|default-desktop}" >&2; exit 1 ;;
 esac
 
-printf '[Autologin]\nSession=%s\n' "${session}" > /etc/sddm.conf.d/zz-steamos-autologin.conf
+printf '[Autologin]\nSession=%s\n' "${session}" > /etc/sddm.conf.d/zz-holo-autologin.conf
+rm -f /etc/sddm.conf.d/zz-steamos-autologin.conf
 systemctl reset-failed sddm.service 2>/dev/null || true
 
 if [[ "${default_only:-0}" == "1" ]]; then

@@ -28,3 +28,9 @@ upstream and dropped out.
   source: https://gitlab.steamos.cloud/holo/steamos-manager/-/commit/2f7c1c3028425e63bc1191fbfa1ef801e9300334
 - `patches/0009-Rename-minfreq-field-to-min_freq-for-consistency.patch`
   source: https://gitlab.steamos.cloud/holo/steamos-manager/-/commit/9d43f89f1f252da8f1e1b6ad2b8bccff30edbb3b
+- `patches/0010-Allow-CpuScaling1-to-be-served-by-a-remote-interface.patch`
+  source: armada
+  notes: `armada-powerd` owns the governor as part of a power profile and `steamos-priv-write` refuses Steam's writes, so remoting it lands Steam's control in our profile model. Needs both halves: a remote only fills a hole where no local implementation exists, and `CpuScaling1` is the one that registers unconditionally.
+- `patches/0011-inputplumber-Only-manage-target-devices-when-configu.patch`
+  source: armada
+  notes: `DeckService` races `armada-controller-type.service` at boot and re-asserts on every composite-device recreation. With no `[inputplumber]` section it forces `[deck-uhid]`, and `is_deck()` wants exactly one target, so our keyboard/mouse extras are dropped with no user involvement. We cannot express our targets in the config either - an unknown `InputPlumberTargetDevice` fails deserialization and drops the whole SoC file.

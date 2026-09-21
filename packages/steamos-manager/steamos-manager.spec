@@ -30,6 +30,8 @@ Patch6:         0006-Add-gpufreq_limit-to-custom-profiles.patch
 Patch7:         0007-Fix-a-bug-where-UI-could-latch-a-bad-manual-clock-va.patch
 Patch8:         0008-Add-GPU-manual-clock-minimum-value.patch
 Patch9:         0009-Rename-minfreq-field-to-min_freq-for-consistency.patch
+Patch10:        0010-Allow-CpuScaling1-to-be-served-by-a-remote-interface.patch
+Patch11:        0011-inputplumber-Only-manage-target-devices-when-configu.patch
 
 BuildRequires:  cargo
 BuildRequires:  rust

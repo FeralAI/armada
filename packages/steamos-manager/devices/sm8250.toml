@@ -36,3 +36,7 @@ dt.compatible = "retroidpocket,rpminiv2"
 device        = "retroid_pocket_mini_v2"
 variant       = "RPMiniV2"
 friendly_name = "Retroid Pocket Mini V2"
+
+# armada-powerd owns the governor and serves CpuScaling1 over remotes.d.
+[cpu_scaling]
+driver = "none"

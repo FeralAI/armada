@@ -12,3 +12,7 @@ dt.compatible = "konkr,pocket-fit"
 device        = "konkr_pocket_fit"
 variant       = "PocketFIT"
 friendly_name = "KONKR Pocket FIT"
+
+# armada-powerd owns the governor and serves CpuScaling1 over remotes.d.
+[cpu_scaling]
+driver = "none"
