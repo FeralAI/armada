@@ -1,50 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { envPresets, findPreset, resolveEnvValues } from "../src/lib/envPresets.ts";
+import { findPreset, localized, resolveEnvValues } from "../src/lib/envPresets.ts";
+import type { EnvPreset } from "../src/types.ts";
 
-// The modal rejects names that are empty or carry '=' or NUL, so a preset that
-// broke those rules would be unsaveable from the picker it ships in.
-test("every preset name is a saveable variable name, listed once", () => {
-  const names = envPresets.map((preset) => preset.name);
-  assert.equal(new Set(names).size, names.length, "duplicate preset name");
-  for (const name of names) assert.match(name, /^[A-Z][A-Z0-9_]*$/);
-});
-
-// The modal picks its value widget from exactly one of these fields. Two of them
-// on one preset means the widget chosen silently ignores the other.
-test("each preset declares one shape of value: options, a fixed value, or an example", () => {
-  for (const preset of envPresets) {
-    const shapes = [preset.options, preset.value, preset.example].filter((shape) => shape !== undefined);
-    assert.equal(shapes.length, 1, `${preset.name} declares ${shapes.length} value shapes`);
-  }
-});
-
-// An empty option or label reaches the dropdown as a blank row the user cannot read.
-test("no option ships an empty value or an empty label", () => {
-  for (const preset of envPresets) {
-    for (const option of preset.options || []) {
-      assert.notEqual(option.data, "", `${preset.name} has an empty option value`);
-      assert.notEqual(option.label, "", `${preset.name} has an empty option label`);
-    }
-  }
-});
-
-// The whole point of the picker is that a name like VKD3D_SHADER_MODEL explains
-// itself. A preset without a description is just an acronym in a list.
-test("every preset carries the description the docs publish for it", () => {
-  for (const preset of envPresets) {
-    assert.ok(preset.description.length > 0, `${preset.name} has no description`);
-  }
-});
+// The factory list itself is data now, checked against the real file by
+// tests/env-presets-test.sh. What is left here is the code that reads it.
+const presets: EnvPreset[] = [
+  { name: "VKD3D_SHADER_MODEL", description: { en: "Highest shader model." }, options: [
+    { data: "6_0", label: "6_0 - Shader Model 6.0" },
+  ] },
+  { name: "DXVK_FRAME_RATE", description: "Frame limit.", example: "60" },
+];
 
 // Variable names are case sensitive, so a near miss must not resolve to a preset
 // and hand the user a dropdown for a variable they did not name.
 test("findPreset matches the exact name and nothing else", () => {
-  assert.equal(findPreset("VKD3D_SHADER_MODEL")?.name, "VKD3D_SHADER_MODEL");
-  assert.equal(findPreset("vkd3d_shader_model"), undefined);
-  assert.equal(findPreset("VKD3D_SHADER_MODEL "), undefined);
-  assert.equal(findPreset("MY_OWN_VARIABLE"), undefined);
-  assert.equal(findPreset(""), undefined);
+  assert.equal(findPreset(presets, "VKD3D_SHADER_MODEL")?.name, "VKD3D_SHADER_MODEL");
+  assert.equal(findPreset(presets, "vkd3d_shader_model"), undefined);
+  assert.equal(findPreset(presets, "VKD3D_SHADER_MODEL "), undefined);
+  assert.equal(findPreset(presets, "MY_OWN_VARIABLE"), undefined);
+  assert.equal(findPreset(presets, ""), undefined);
+  assert.equal(findPreset([], "VKD3D_SHADER_MODEL"), undefined);
+});
+
+// A label with no text to translate ships as a bare string, so the reader must
+// take both shapes or half the dropdown comes out blank.
+test("localized takes a bare string as the text for every locale", () => {
+  assert.equal(localized("6_0 - Shader Model 6.0", "zh-CN"), "6_0 - Shader Model 6.0");
+  assert.equal(localized("6_0 - Shader Model 6.0", "en"), "6_0 - Shader Model 6.0");
+});
+
+// An admin adding a variable to /etc/armada writes the language they speak. The
+// panel must still show something in the other three.
+test("localized falls back to English, then to nothing at all", () => {
+  const text = { en: "Frame limit.", "pt-BR": "Limite de quadros." };
+  assert.equal(localized(text, "pt-BR"), "Limite de quadros.");
+  assert.equal(localized(text, "zh-CN"), "Frame limit.");
+  assert.equal(localized({ "pt-BR": "Limite de quadros." }, "zh-CN"), "");
+  assert.equal(localized(undefined, "en"), "");
 });
 
 // The picker prefills from whatever the variable is set to today, so the user

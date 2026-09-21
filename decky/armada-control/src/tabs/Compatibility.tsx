@@ -17,8 +17,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getCompatMappedAppids, reapplyPerf, restartGameMode, saveCompatApplied, saveTweaks } from "../backend";
 import { SelectEdit, SliderEdit } from "../components/widgets";
-import { t, translateLabel } from "../i18n";
-import { envPresets, findPreset, resolveEnvValues } from "../lib/envPresets";
+import { getCurrentLocale, t, translateLabel } from "../i18n";
+import { findPreset, localized, resolveEnvValues } from "../lib/envPresets";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
 import { availableGames, editTargetOptions } from "../lib/games";
@@ -42,7 +42,7 @@ import {
   specifyCompatTool,
 } from "../lib/steamCompat";
 import type { CompatTool } from "../lib/steamCompat";
-import type { Config } from "../types";
+import type { Config, EnvPreset } from "../types";
 
 const PERF_KEYS = [
   "cores", "wineTopology", "nice", "gamescopeCores",
@@ -162,6 +162,7 @@ function EnvVarModal({
   closeModal,
   initialKey,
   initialValue,
+  presets,
   fromPresets,
   known,
   onSave,
@@ -170,6 +171,8 @@ function EnvVarModal({
   closeModal?: () => void;
   initialKey: string;
   initialValue: string;
+  // The documented list, shipped as data in env-presets.json.
+  presets: EnvPreset[];
   // Picker mode: the name comes from the documented list instead of a text field.
   fromPresets?: boolean;
   // Values already in effect on this profile, so picking a variable shows its current setting.
@@ -180,11 +183,12 @@ function EnvVarModal({
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
   const [nameError, setNameError] = useState("");
-  const preset = findPreset(key);
+  const locale = getCurrentLocale();
+  const preset = findPreset(presets, key);
   const pickPreset = (name: string) => {
     setKey(name);
-    // The docs list no defaults, so an unset variable with an option list starts empty.
-    setValue(known?.[name] ?? findPreset(name)?.value ?? "");
+    // The docs list no defaults, so an unset variable starts empty.
+    setValue(known?.[name] ?? "");
     setNameError("");
   };
   const save = () => {
@@ -204,21 +208,21 @@ function EnvVarModal({
             <Dropdown
               strDefaultLabel={t("compatibility.selectVariable")}
               selectedOption={key}
-              rgOptions={envPresets.map((item) => ({ data: item.name, label: item.name }))}
+              rgOptions={presets.map((item) => ({ data: item.name, label: item.name }))}
               onChange={(option) => pickPreset(String(option.data))}
             />
           </Field>
         ) : (
           <TextField label={t("common.name")} value={key} onChange={(event) => setKey(event.target.value)} />
         )}
-        {preset ? <Field description={preset.description} /> : null}
+        {preset ? <Field description={localized(preset.description, locale)} /> : null}
         {nameError ? <Field description={nameError} /> : null}
         {preset?.options ? (
           <Field label={t("common.value")} childrenLayout="below" childrenContainerWidth="max">
             <Dropdown
               strDefaultLabel={t("compatibility.selectValue")}
               selectedOption={value}
-              rgOptions={preset.options}
+              rgOptions={preset.options.map((option) => ({ data: option.data, label: localized(option.label, locale) }))}
               onChange={(option) => setValue(String(option.data))}
             />
           </Field>
@@ -671,8 +675,9 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
       <EnvVarModal
         initialKey={key || ""}
         initialValue={key ? String(ownEnv[key] ?? "") : ""}
+        presets={config.envPresets}
         // A documented variable gets its typed field however it was created.
-        fromPresets={fromPresets || (!!key && !!findPreset(key))}
+        fromPresets={fromPresets || (!!key && !!findPreset(config.envPresets, key))}
         known={resolveEnvValues(ownEnv, globalEnv)}
         onSave={(nextKey, nextValue) => saveEnvVar(key, nextKey, nextValue)}
         onDelete={key ? () => deleteEnvVar(key) : undefined}
@@ -821,9 +826,11 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
           </div>
         </ButtonItem>
       ))}
-      <ButtonItem layout="below" onClick={() => openEnvVar(null, true)}>
-        {t("compatibility.addCommonVariable")}
-      </ButtonItem>
+      {config.envPresets.length ? (
+        <ButtonItem layout="below" onClick={() => openEnvVar(null, true)}>
+          {t("compatibility.addCommonVariable")}
+        </ButtonItem>
+      ) : null}
       <ButtonItem layout="below" onClick={() => openEnvVar(null)}>
         {t("compatibility.addCustomVariable")}
       </ButtonItem>
