@@ -41,6 +41,9 @@ FROM ${KERNEL_REF} AS kernel
 ARG INPUTPLUMBER_REF
 FROM ${INPUTPLUMBER_REF} AS inputplumber
 
+ARG STEAMOS_MANAGER_REF
+FROM ${STEAMOS_MANAGER_REF} AS steamos-manager
+
 ARG NETWORKMANAGER_REF
 FROM ${NETWORKMANAGER_REF} AS networkmanager
 
@@ -100,6 +103,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=powerdevil,source=/rpms,target=/packages/powerdevil \
     --mount=type=bind,from=kernel,source=/kernel,target=/packages/kernel \
     --mount=type=bind,from=inputplumber,source=/rpms,target=/packages/inputplumber \
+    --mount=type=bind,from=steamos-manager,source=/rpms,target=/packages/steamos-manager \
     --mount=type=bind,from=networkmanager,source=/rpms,target=/packages/networkmanager \
     --mount=type=bind,from=jupiter-hw-support,source=/rpms,target=/packages/jupiter-hw-support \
     --mount=type=bind,from=mesa-android,source=/,target=/packages/mesa-android \
