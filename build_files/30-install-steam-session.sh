@@ -20,6 +20,10 @@ dnf5 -y install --setopt=install_weak_deps=False \
 # Patched InputPlumber: dpad signed-axis fix
 dnf5 -y install --setopt=install_weak_deps=False /packages/inputplumber/inputplumber-*.rpm
 
+# SteamOS Manager: upstream main plus the Steam Frame series, with our device configs.
+dnf5 -y install --setopt=install_weak_deps=False \
+    /packages/steamos-manager/steamos-manager-[0-9]*.rpm
+
 # Patched NetworkManager: /etc/NetworkManager/ignore-sleep keeps wifi up across fake-suspend.
 dnf5 -y install --setopt=install_weak_deps=False /packages/networkmanager/*.rpm
 
