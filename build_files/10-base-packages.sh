@@ -23,6 +23,8 @@ dnf5 -y install --setopt=install_weak_deps=False \
     bluez \
     dbus-broker \
     python3-gobject \
+    gtk4 \
+    libadwaita \
     python3-websocket-client \
     polkit \
     upower \
