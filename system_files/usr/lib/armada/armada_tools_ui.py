@@ -149,6 +149,9 @@ class UpdatesGroup(Adw.PreferencesGroup):
             self.operation.restart_button.set_visible(idle and self.operation.succeeded and state["reboot_ready"])
         self.updating = True
         self.channels = state["channels"]
+        self.channel.set_use_subtitle(not self.channels)
+        if self.channels:
+            self.channel.set_subtitle("")
         self.channel.set_model(Gtk.StringList.new([value.title() for value in self.channels]
                                                  or [state["channel"] or "Unavailable"]))
         if state["channel"] in self.channels:
