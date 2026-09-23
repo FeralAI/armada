@@ -345,6 +345,9 @@ with tempfile.TemporaryDirectory() as directory, \
     assert updates.update.is_sensitive()
     check_landscape()
     updates.render(os_state.copy())
+    assert not updates.channel.get_use_subtitle()
+    assert not updates.channel.get_subtitle()
+    assert updates.channel.get_selected_item().get_string() == os_state["channel"].title()
 
     resize(400, 620)
     allocations = [section.compute_bounds(window.sections_grid)[1] for section in window.sections]
