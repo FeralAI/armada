@@ -837,3 +837,39 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0505a-arm64-unaligned-atomics-cover-the-load128-store-exclusive.patch`
   source: armada
   upstream: local
+- `patches/0557-ASoC-codecs-lpass-wsa-macro-switch-to-pm-clock-framework.patch`
+  source: https://git.kernel.org/torvalds/c/cd054a6e272caa97ab808ef6f5588749a1429108
+  upstream: https://patch.msgid.link/20260702-xo-sd-codec-v7-b4-v8-1-d39d0fdb7859@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0558-ASoC-codecs-lpass-va-macro-switch-to-pm-clock-framework.patch`
+  source: https://git.kernel.org/torvalds/c/eb667d0fbdd38d5a800b9e7aafc9a6c14530b9bf
+  upstream: https://patch.msgid.link/20260702-xo-sd-codec-v7-b4-v8-2-d39d0fdb7859@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0559-ASoC-codecs-lpass-wsa-macro-use-devm-clk-hw-register-for-mclk.patch`
+  source: https://git.kernel.org/torvalds/c/541735571578b84987868c5662089f73bac36895
+  upstream: https://patch.msgid.link/20260702-xo-sd-codec-v7-b4-v8-3-d39d0fdb7859@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0560-ASoC-codecs-lpass-tx-macro-switch-to-pm-clock-framework.patch`
+  source: https://git.kernel.org/torvalds/c/b9b23e72abef91ab4689f1467cefc2517042ab26
+  upstream: https://patch.msgid.link/20260707-xo-sd-codec-tx-rx-v2-1-f61b4622f97f@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0561-ASoC-codecs-lpass-rx-macro-switch-to-pm-clock-framework.patch`
+  source: https://git.kernel.org/torvalds/c/b05482e7ce1b110f86b08a99768ac41e4c9e4dfa
+  upstream: https://patch.msgid.link/20260707-xo-sd-codec-tx-rx-v2-2-f61b4622f97f@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0562-ASoC-codecs-lpass-tx-rx-macro-check-clk-set-rate-return-value.patch`
+  source: https://git.kernel.org/torvalds/c/b8ca90fafe6adc401601f91d1394ba76bacf67ed
+  upstream: https://patch.msgid.link/20260707-xo-sd-codec-tx-rx-v2-3-f61b4622f97f@oss.qualcomm.com
+  notes: Linux 7.3. Puts the macro clocks, including the q6prm HW macro/dcodec votes the 7.2 drivers hold from probe, under runtime PM.
+- `patches/0563-ASoC-codecs-lpass-macro-force-runtime-suspend-across-system-sleep.patch`
+  source: armada
+  upstream: local
+  notes: The macros stay runtime-active through s2idle while SoundWire is held; force-suspend so the ADSP (the "AUDIO" CXPC voter) can release LPASS.
+- `patches/0564-soundwire-qcom-force-runtime-suspend-across-system-sleep.patch`
+  source: armada
+  upstream: local
+  notes: Same for the SoundWire controller; the WCD9390 peripherals are kept runtime-active for jack detection.
+- `patches/0565-pinctrl-qcom-sm8650-lpass-lpi-force-runtime-suspend-across-system-sleep.patch`
+  source: armada
+  upstream: local
+  notes: Same for the LPASS LPI pin controller, which the SoundWire controllers keep runtime-active through their device links (held by 0603); otherwise it keeps LPASS_HW_MACRO/DCODEC voted in s2idle.

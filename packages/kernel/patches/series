@@ -231,3 +231,14 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 0530-ASoC-qdsp6-release-AudioReach-graphs-across-system-suspend.patch
 0531-ASoC-qcom-sc8280xp-release-the-board-i2s-clock-across-system-suspend.patch
 0532-hwmon-pwm-fan-optionally-run-the-fan-while-charging-in-s2idle.patch
+
+# ============== LPASS clocks released in s2idle (7.3 backports + force suspend) ==============
+0557-ASoC-codecs-lpass-wsa-macro-switch-to-pm-clock-framework.patch
+0558-ASoC-codecs-lpass-va-macro-switch-to-pm-clock-framework.patch
+0559-ASoC-codecs-lpass-wsa-macro-use-devm-clk-hw-register-for-mclk.patch
+0560-ASoC-codecs-lpass-tx-macro-switch-to-pm-clock-framework.patch
+0561-ASoC-codecs-lpass-rx-macro-switch-to-pm-clock-framework.patch
+0562-ASoC-codecs-lpass-tx-rx-macro-check-clk-set-rate-return-value.patch
+0563-ASoC-codecs-lpass-macro-force-runtime-suspend-across-system-sleep.patch
+0564-soundwire-qcom-force-runtime-suspend-across-system-sleep.patch
+0565-pinctrl-qcom-sm8650-lpass-lpi-force-runtime-suspend-across-system-sleep.patch
