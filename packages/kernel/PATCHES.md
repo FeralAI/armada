@@ -357,7 +357,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0556-remoteproc-qcom-pas-manage-the-sm8750-soccp.patch`
   source: armada
   upstream: local
-  notes: Fixes the SM8750 s2idle wake hang at its cause and replaces the 0521 PCIe suspend OPP floor, which is no longer applied. The bootloader's early SoCCP image sits in D0 behind the system NoC with no bus vote; the driver reloads soccp.mbn, which parks itself in D3, and the SoC then also reaches CX shutdown and DDR low power in suspend. Until the TCSR D-state register shows D3 the driver holds the SoCCP's path to DDR itself, so a board without soccp.mbn (Pocket FIT Elite today) still wakes, without the deeper sleep. Odin 3 firmware: `qcom/sm8750/ayn/odin3/soccp.mbn`, from the device's modem partition.
+  notes: Manages the SM8750 SoCCP, the cause of the s2idle wake hang on 7.3. The bootloader's early SoCCP image sits in D0 behind the system NoC with no bus vote; the driver reloads soccp.mbn, which parks itself in D3. On 7.3 the SoC then reaches CX shutdown and DDR low power in suspend with no keepalive; on this kernel the 0521 PCIe suspend OPP floor is still needed (see its note), so this is groundwork here. Until the TCSR D-state register shows D3 the driver holds the SoCCP's path to DDR itself, so a board without soccp.mbn (Pocket FIT Elite today) still wakes, without the deeper sleep. Odin 3 firmware: `qcom/sm8750/ayn/odin3/soccp.mbn`, from the device's modem partition.
 - `patches/0522-PCI-host-common-let-only-endpoints-veto-d3cold.patch`
   source: armada
   upstream: local
@@ -390,7 +390,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0521-arm64-dts-qcom-sm8750-add-a-pcie-suspend-opp.patch`
   source: armada
   upstream: local
-  notes: Not applied (commented out in the series). The floor only worked because its path kept the system NoC on for the SoCCP; 0556 and 0557 handle that directly.
+  notes: Still applied on this kernel. On 7.3 the floor is not needed once the SoCCP is managed (0556, 0557), but on 7.2.6 the first s2idle without it hung on wake (Odin 3, 2026-10-13, cause not yet identified), so it stays until that is understood. It keeps the SoC out of CX shutdown and DDR low power.
 - `patches/0527-arm64-dts-qcom-sm8650-add-a-pcie-suspend-opp.patch`
   source: armada
   upstream: local
