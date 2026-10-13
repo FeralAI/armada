@@ -357,7 +357,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0556-remoteproc-qcom-pas-manage-the-sm8750-soccp.patch`
   source: armada
   upstream: local
-  notes: Manages the SM8750 SoCCP, the cause of the s2idle wake hang on 7.3. The bootloader's early SoCCP image sits in D0 behind the system NoC with no bus vote; the driver reloads soccp.mbn, which parks itself in D3. On 7.3 the SoC then reaches CX shutdown and DDR low power in suspend with no keepalive; on this kernel the 0521 PCIe suspend OPP floor is still needed (see its note), so this is groundwork here. Until the TCSR D-state register shows D3 the driver holds the SoCCP's path to DDR itself, so a board without soccp.mbn (Pocket FIT Elite today) still wakes, without the deeper sleep. Odin 3 firmware: `qcom/sm8750/ayn/odin3/soccp.mbn`, from the device's modem partition.
+  notes: Fixes one of the two causes of the SM8750 s2idle wake hang (the other is 0044, no longer applied) and lets the 0521 PCIe suspend OPP floor go. The bootloader's early SoCCP image sits in D0 behind the system NoC with no bus vote; the driver reloads soccp.mbn, which parks itself in D3, and the SoC then reaches CX shutdown and DDR low power in suspend. Until the TCSR D-state register shows D3 the driver holds the SoCCP's path to DDR itself, so a board without soccp.mbn (Pocket FIT Elite today) still wakes, without the deeper sleep. Odin 3 firmware: `qcom/sm8750/ayn/odin3/soccp.mbn`, from the device's modem partition.
 - `patches/0522-PCI-host-common-let-only-endpoints-veto-d3cold.patch`
   source: armada
   upstream: local
@@ -390,7 +390,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0521-arm64-dts-qcom-sm8750-add-a-pcie-suspend-opp.patch`
   source: armada
   upstream: local
-  notes: Still applied on this kernel. On 7.3 the floor is not needed once the SoCCP is managed (0556, 0557), but on 7.2.6 the first s2idle without it hung on wake (Odin 3, 2026-10-13, cause not yet identified), so it stays until that is understood. It keeps the SoC out of CX shutdown and DDR low power.
+  notes: Not applied (commented out in the series). The floor only worked because its path kept the PCIe and system NoCs on in the sleep set, for the PCIe controller that 0044 left powered and for the unmanaged SoCCP. 0556/0557 handle the SoCCP and 0044 is no longer applied, and without the floor the SoC reaches CX shutdown and DDR low power.
 - `patches/0527-arm64-dts-qcom-sm8650-add-a-pcie-suspend-opp.patch`
   source: armada
   upstream: local
@@ -606,6 +606,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0044-clk-qcom-gcc-sm8750-Do-not-turn-off-PCIe-GDSCs-durin.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8750/patches/linux/0044-clk-qcom-gcc-sm8750-Do-not-turn-off-PCIe-GDSCs-durin.patch
   upstream: https://lore.kernel.org/r/20260102-pci_gdsc_fix-v1-3-b17ed3d175bc@oss.qualcomm.com
+  notes: Not applied (commented out in the series). With the PCIe GDSCs left on across suspend (PWRSTS_RET_ON) the controller stays powered on the PCIe NoC, and the SoC hangs on the s2idle wake unless a PCIe bus vote (SN4) is kept in the sleep set, which in turn blocks CX shutdown. Tested on the Odin 3 (7.2.6, SoCCP managed, no keepalive): with this patch the system-level PSCI call never returns; without it the SoC wakes and reaches CX shutdown, and the WCN7860 comes back because pwrctrl powers it off for suspend and the link retrains. Not tested on the Pocket FIT Elite.
 - `patches/0045-Bluetooth-qca-add-WCN7860-support.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8750/patches/linux/0045-Bluetooth-qca-add-WCN7860-support.patch
   upstream: unknown
