@@ -37,7 +37,6 @@ struct DeviceProfile {
 enum BackendProfile {
     Serial {
         device: String,
-        #[serde(default)]
         protocol: ProfileSerialProtocol,
     },
     Channels {
@@ -48,10 +47,9 @@ enum BackendProfile {
     },
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ProfileSerialProtocol {
-    #[default]
     Micro2,
     PocketS2,
 }
@@ -107,14 +105,16 @@ fn load_backend(
         .transpose()?;
 
     match profile.backend {
-        BackendProfile::Serial { device, protocol } => Ok(LightingBackend::Serial(
-            SerialBackend::new(dev_root, device)
-                .with_protocol(match protocol {
-                    ProfileSerialProtocol::Micro2 => SerialProtocol::Micro2,
-                    ProfileSerialProtocol::PocketS2 => SerialProtocol::PocketS2,
-                })
-                .with_correction(profile.correction),
-        )),
+        BackendProfile::Serial { device, protocol } => {
+            let serial_protocol = match protocol {
+                ProfileSerialProtocol::Micro2 => SerialProtocol::Micro2,
+                ProfileSerialProtocol::PocketS2 => SerialProtocol::PocketS2,
+            };
+            Ok(LightingBackend::Serial(
+                SerialBackend::new(dev_root, device, serial_protocol)
+                    .with_correction(profile.correction),
+            ))
+        }
         BackendProfile::Channels { targets } if !targets.is_empty() => {
             Ok(LightingBackend::Channels(
                 ChannelBackend::new(root, targets).with_correction(profile.correction),

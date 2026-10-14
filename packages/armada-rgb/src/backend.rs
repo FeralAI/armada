@@ -53,10 +53,9 @@ impl LightingBackend {
 }
 
 /// MCU packet family spoken over the serial device.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SerialProtocol {
     /// 11-byte frame used by the AYANEO Pocket MICRO 2.
-    #[default]
     Micro2,
     /// 27-byte frame used by the AYANEO Pocket S2 analogue-stick rings.
     PocketS2,
@@ -70,18 +69,13 @@ pub struct SerialBackend {
 }
 
 impl SerialBackend {
-    pub fn new(root: PathBuf, device: String) -> Self {
+    pub fn new(root: PathBuf, device: String, protocol: SerialProtocol) -> Self {
         Self {
             root,
             device,
-            protocol: SerialProtocol::default(),
+            protocol,
             correction: None,
         }
-    }
-
-    pub(crate) fn with_protocol(mut self, protocol: SerialProtocol) -> Self {
-        self.protocol = protocol;
-        self
     }
 
     pub(crate) fn with_correction(mut self, correction: Option<ColorCorrection>) -> Self {
