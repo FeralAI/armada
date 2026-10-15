@@ -107,7 +107,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	kfree(part);
  
  	return ret;
-@@ -5563,6 +5622,8 @@
+@@ -5568,6 +5627,8 @@
  
  	lockdep_assert_wiphy(wiphy);
  
@@ -116,7 +116,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	arvif = ar->scan.arvif;
  
  	/* The scan vdev has already been deleted. This can occur when a
-@@ -5987,9 +6048,13 @@
+@@ -5994,9 +6055,13 @@
  	max_scan_time = arg->max_scan_time;
  	split_freq = ath12k_mac_scan_split_freq(ar);
  	if (split_freq &&
@@ -174,10 +174,10 @@ diff --git a/drivers/net/wireless/ath/ath12k/core.h b/drivers/net/wireless/ath/a
 --- a/drivers/net/wireless/ath/ath12k/core.h
 +++ b/drivers/net/wireless/ath/ath12k/core.h
 @@ -640,6 +640,7 @@
- 		struct delayed_work timeout;
+ 		struct wiphy_delayed_work timeout;
  		enum ath12k_scan_state state;
  		bool is_roc;
 +		bool range_tx_paused;
  		int roc_freq;
  		bool roc_notify;
- 		struct wiphy_work vdev_clean_wk;
+ 		bool finish_queued;

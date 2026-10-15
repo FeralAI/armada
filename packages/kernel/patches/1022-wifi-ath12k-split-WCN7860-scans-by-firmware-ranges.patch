@@ -145,14 +145,14 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  			ieee80211_remain_on_channel_expired(hw);
  		fallthrough;
  	case ATH12K_SCAN_STARTING:
--		cancel_delayed_work(&ar->scan.timeout);
-+		/* Keep a single overall request timeout across all range
-+		 * batches: only cancel for the last batch (or a non-range scan).
+-		ar->scan.finish_queued = true;
++		/* Keep the overall timeout active between range batches.
++		 * Only final completion suppresses a racing timeout.
 +		 */
 +		if (!(ar->scan.range_req &&
 +		      ar->scan.state == ATH12K_SCAN_RUNNING &&
 +		      ar->scan.range_next < ar->scan.range_req->num_chan))
-+			cancel_delayed_work(&ar->scan.timeout);
++			ar->scan.finish_queued = true;
  		complete_all(&ar->scan.completed);
  		wiphy_work_queue(ar->ah->hw->wiphy, &ar->scan.vdev_clean_wk);
  		break;
@@ -165,7 +165,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	__ath12k_mac_scan_finish(ar);
  	spin_unlock_bh(&ar->data_lock);
  }
-@@ -5430,6 +5559,7 @@
+@@ -5435,12 +5564,11 @@
  					 scan.vdev_clean_wk);
  	struct ath12k_hw *ah = ar->ah;
  	struct ath12k_link_vif *arvif;
@@ -173,7 +173,13 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  
  	lockdep_assert_wiphy(wiphy);
  
-@@ -5442,7 +5572,46 @@
+ 	arvif = ar->scan.arvif;
+-
+-	wiphy_delayed_work_cancel(wiphy, &ar->scan.timeout);
+ 
+ 	/* The scan vdev has already been deleted. This can occur when a
+ 	 * new scan request is made on the same vif with a different
+@@ -5449,7 +5577,46 @@
  	 * arvif is already deleted. Alternatively, if the scan vdev is not
  	 * being used as an actual vdev, then do not delete it.
  	 */
@@ -221,13 +227,13 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  		goto work_complete;
  
  	ath12k_dbg(ar->ab, ATH12K_DBG_MAC, "mac clean scan vdev (link id %u)",
-@@ -5452,6 +5621,21 @@
+@@ -5459,6 +5626,21 @@
  	ath12k_mac_unassign_link_vif(arvif);
  
  work_complete:
-+	if (ar->scan.range_req) {
-+		cancel_delayed_work(&ar->scan.timeout);
++	wiphy_delayed_work_cancel(wiphy, &ar->scan.timeout);
 +
++	if (ar->scan.range_req) {
 +		/* If the owned request still has unscanned channels, the scan
 +		 * did not finish and must not be reported as a success.
 +		 */
@@ -243,7 +249,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	spin_lock_bh(&ar->data_lock);
  	ar->scan.arvif = NULL;
  	if (!ar->scan.is_roc) {
-@@ -5681,9 +5865,11 @@
+@@ -5689,9 +5871,11 @@
  	struct ath12k_link_vif *arvif;
  	struct cfg80211_scan_request *req = &hw_req->req;
  	struct ath12k_wmi_scan_req_arg *arg = NULL;
@@ -255,7 +261,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	bool create = true;
  
  	lockdep_assert_wiphy(hw->wiphy);
-@@ -5798,7 +5984,28 @@
+@@ -5807,7 +5991,28 @@
  	for (i = 0; i < arg->num_chan; i++)
  		arg->chan_list[i] = chan_list[i]->center_freq;
  
@@ -285,7 +291,7 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  	if (ret) {
  		if (ret == -EBUSY)
  			ath12k_dbg(ar->ab, ATH12K_DBG_MAC,
-@@ -5806,6 +6013,9 @@
+@@ -5815,6 +6020,9 @@
  		else
  			ath12k_warn(ar->ab, "failed to start hw scan: %d\n", ret);
  
@@ -294,17 +300,17 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
 +
  		spin_lock_bh(&ar->data_lock);
  		ar->scan.state = ATH12K_SCAN_IDLE;
- 		spin_unlock_bh(&ar->data_lock);
-@@ -5816,7 +6026,7 @@
- 
+ 		ar->scan.finish_queued = false;
+@@ -5827,7 +6035,7 @@
  	/* Add a margin to account for event/command processing */
- 	ieee80211_queue_delayed_work(ath12k_ar_to_hw(ar), &ar->scan.timeout,
--				     msecs_to_jiffies(arg->max_scan_time +
-+				     msecs_to_jiffies(max_scan_time +
- 						      ATH12K_MAC_SCAN_TIMEOUT_MSECS));
+ 	wiphy_delayed_work_queue(ath12k_ar_to_hw(ar)->wiphy,
+ 				 &ar->scan.timeout,
+-				 msecs_to_jiffies(arg->max_scan_time +
++				 msecs_to_jiffies(max_scan_time +
+ 						  ATH12K_MAC_SCAN_TIMEOUT_MSECS));
  
  exit:
-@@ -5897,6 +6107,7 @@
+@@ -5908,6 +6116,7 @@
  			ar = arvif->ar;
  			if (ar->scan.arvif == arvif) {
  				wiphy_work_cancel(hw->wiphy, &ar->scan.vdev_clean_wk);
@@ -312,15 +318,15 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
  				spin_lock_bh(&ar->data_lock);
  				ar->scan.arvif = NULL;
  				ar->scan.state = ATH12K_SCAN_IDLE;
-@@ -10070,6 +10281,7 @@
+@@ -10082,6 +10291,7 @@
  
- 	cancel_delayed_work_sync(&ar->scan.timeout);
+ 	wiphy_delayed_work_cancel(ath12k_ar_to_hw(ar)->wiphy, &ar->scan.timeout);
  	wiphy_work_cancel(ath12k_ar_to_hw(ar)->wiphy, &ar->scan.vdev_clean_wk);
 +	ath12k_mac_scan_range_free(ar);
  	cancel_work_sync(&ar->regd_channel_update_work);
  	cancel_work_sync(&ar->regd_update_work);
  	cancel_work_sync(&ar->ab->rfkill_work);
-@@ -11073,6 +11285,7 @@
+@@ -11085,6 +11295,7 @@
  		 */
  		if (ar->scan.arvif == arvif) {
  			wiphy_work_cancel(hw->wiphy, &ar->scan.vdev_clean_wk);
@@ -331,8 +337,8 @@ diff --git a/drivers/net/wireless/ath/ath12k/mac.c b/drivers/net/wireless/ath/at
 diff --git a/drivers/net/wireless/ath/ath12k/core.h b/drivers/net/wireless/ath/ath12k/core.h
 --- a/drivers/net/wireless/ath/ath12k/core.h
 +++ b/drivers/net/wireless/ath/ath12k/core.h
-@@ -644,6 +644,9 @@
- 		bool roc_notify;
+@@ -645,6 +645,9 @@
+ 		bool finish_queued;
  		struct wiphy_work vdev_clean_wk;
  		struct ath12k_link_vif *arvif;
 +		struct ath12k_wmi_scan_req_arg *range_req;
