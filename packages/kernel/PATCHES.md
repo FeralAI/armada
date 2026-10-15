@@ -840,8 +840,8 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/1022-wifi-ath12k-split-WCN7860-scans-by-firmware-ranges.patch`
   source: armada
   upstream: local
-  notes: Splits firmware scan requests only for WCN7860 hw2.0 with a single pdev, a single logical radio and valid DBS_OR_SBS PHY ranges. Tested on KONKR Pocket FIT Elite; retains the original channel order and one final completion.
+  notes: Splits WCN7860 scans by firmware range, preserving one overall timeout and completion. Tested on KONKR Pocket FIT Elite.
 - `patches/1023-wifi-ath12k-protect-TX-during-associated-range-scans.patch`
   source: armada
   upstream: local
-  notes: Uses single-channel associated batches with TX drain, home-channel settle and communication windows, balanced queue ownership and a host timeout budget. Tested on KONKR Pocket FIT Elite; leaves other hardware modes on their original scan path.
+  notes: Uses single-channel associated scans with TX draining and home-channel rest. Tested on KONKR Pocket FIT Elite.
