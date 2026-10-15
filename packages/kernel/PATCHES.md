@@ -106,7 +106,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0108-drm-msm-dpu-send-the-flip-event-after-the-vblank-irq.patch`
   source: https://github.com/portare-ch/portareos/blob/be06100b6d127692ed99401d23980fc04888ae01/projects/PortareOS/devices/SM8550/patches/linux/1098-drm-msm-dpu-send-the-flip-event-after-the-vblank-irq.patch
   upstream: unknown
-  notes: Companion flip-event ordering fix for AVR; refreshed offsets for Armada and added the source link to the patch header.
+  notes: Companion flip-event ordering fix for AVR; refreshed offsets for Armada and added the source link to the patch header. Armada restricts the kickoff-count wait to encoders that receive the vblank irq: a bonded DSI slave never does, so on dual-DSI panels (AYANEO Pocket S 2K) every commit hit the 50 ms timeout.
 - `patches/0062-gpu-drm-panel-add-wt0630-panel.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0062-gpu-drm-panel-add-wt0630-panel.patch
   upstream: https://lore.kernel.org/r/20260625-topic-sm8650-ayaneo-pocket-s2-r63419-v8-2-8570e692143e@linaro.org
