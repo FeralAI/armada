@@ -36,3 +36,6 @@ already upstream, and `468ae09` only adds a README troubleshooting section.
 - `patches/0011-wifi-Always-write-wpa_supplicant-as-the-backend.patch`
   source: armada
   notes: Steam derives the backend it wants from its own `steamos_wifi_force_wpa_supplicant` setting and only skips the write when the current value already matches, so no NetworkManager config can refuse it. With the setting off it writes `iwd` on every launch. Pinning it in the daemon is the only place the request can be declined.
+- `patches/0012-session-Track-gamescope-session-plus-steam.service-a.patch`
+  source: armada
+  notes: Upstream hardcodes `gamescope-session.service` as game mode, which we never run, so the session manager reports Desktop forever. The screen reader setup only exports `ScreenReader0`/`ScreenReader1` on a switch to Game, so Steam's screen reader toggle hit a missing interface and orca never started.

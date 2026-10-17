@@ -32,6 +32,7 @@ Patch8:         0008-Rename-minfreq-field-to-min_freq-for-consistency.patch
 Patch9:         0009-Allow-CpuScaling1-to-be-served-by-a-remote-interface.patch
 Patch10:        0010-inputplumber-Only-manage-target-devices-when-configu.patch
 Patch11:        0011-wifi-Always-write-wpa_supplicant-as-the-backend.patch
+Patch12:        0012-session-Track-gamescope-session-plus-steam.service-a.patch
 
 BuildRequires:  cargo
 BuildRequires:  rust
@@ -44,6 +45,7 @@ BuildRequires:  pkgconfig(libudev)
 BuildRequires:  systemd-rpm-macros
 
 Requires:       dbus
+Requires:       orca
 # the daemon links libspeechd unconditionally and won't start without it
 Requires:       speech-dispatcher-libs
 %{?systemd_requires}
@@ -70,10 +72,17 @@ install -dm0755 %{buildroot}%{_datadir}/steamos-manager/devices
 install -pm0644 -t %{buildroot}%{_datadir}/steamos-manager/devices \
     %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5}
 
-# SteamOS-only: we run SDDM, and orca isn't installed even though libspeechd is
+# SteamOS-only: we run SDDM
 rm -f %{buildroot}%{_unitdir}/sddm.service.d/reset-oneshot-boot.conf
 rmdir %{buildroot}%{_unitdir}/sddm.service.d
+
+# Fedora's orca package owns orca.service, so upstream's would conflict. Keep
+# theirs plus upstream's one needed difference: the session unsets DISPLAY, so
+# orca reads gamescope's displays from the file our steam session hook writes.
 rm -f %{buildroot}%{_userunitdir}/orca.service
+install -dm0755 %{buildroot}%{_userunitdir}/orca.service.d
+printf '%%s\n' '[Service]' 'EnvironmentFile=-%%t/gamescope-environment' \
+    >%{buildroot}%{_userunitdir}/orca.service.d/10-steamos-manager.conf
 
 %post
 %systemd_post steamos-manager.service
@@ -107,5 +116,7 @@ rm -f %{buildroot}%{_userunitdir}/orca.service
 %{_userunitdir}/steamos-manager.service
 %{_userunitdir}/steamos-manager-session-cleanup.service
 %{_userunitdir}/steamos-manager-configure-cecd.service
+%dir %{_userunitdir}/orca.service.d
+%{_userunitdir}/orca.service.d/10-steamos-manager.conf
 
 %changelog
