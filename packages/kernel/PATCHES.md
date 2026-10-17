@@ -106,7 +106,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0108-drm-msm-dpu-send-the-flip-event-after-the-vblank-irq.patch`
   source: https://github.com/portare-ch/portareos/blob/be06100b6d127692ed99401d23980fc04888ae01/projects/PortareOS/devices/SM8550/patches/linux/1098-drm-msm-dpu-send-the-flip-event-after-the-vblank-irq.patch
   upstream: unknown
-  notes: Companion flip-event ordering fix for AVR; refreshed offsets for Armada and added the source link to the patch header.
+  notes: Companion flip-event ordering fix for AVR; refreshed offsets for Armada and added the source link to the patch header. Armada restricts the kickoff-count wait to encoders that receive the vblank irq: a bonded DSI slave never does, so on dual-DSI panels (AYANEO Pocket S 2K) every commit hit the 50 ms timeout.
 - `patches/0062-gpu-drm-panel-add-wt0630-panel.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0062-gpu-drm-panel-add-wt0630-panel.patch
   upstream: https://lore.kernel.org/r/20260625-topic-sm8650-ayaneo-pocket-s2-r63419-v8-2-8570e692143e@linaro.org
@@ -209,6 +209,12 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: https://github.com/ROCKNIX/distribution/blob/024028b4f3fdd139ae1e575efb25914b8f76595d/projects/ROCKNIX/devices/SM8750/patches/linux/0069-input-misc-add-konkr-sysbtn-MCU-system-buttons.patch
   upstream: unknown
   notes: Updated to ROCKNIX #3089, which adds the MCU-rendered stick lighting effects (sysfs "effect": static/breath/rainbow) and fixes the PM notifier to replay the active lighting mode after resume instead of only the last static colour.
+- `patches/0069a-input-konkr-sysbtn-add-pocket-fit-mcu.patch`
+  source: armada
+  upstream: local
+- `patches/0541-input-joystick-mcu-joystick-power-the-mcu-off-in-suspend.patch`
+  source: armada
+  upstream: local
 - `patches/0060_Mangmi-Pocket-Max-SPI-joypad.patch`
   source: https://github.com/ROCKNIX/distribution/blob/807c74fc46c124891d8aa9b57a68533d38e9a6b2/projects/ROCKNIX/devices/SM8250/patches/linux/0060_Mangmi-Pocket-Max-SPI-joypad.patch
   upstream: unknown
@@ -422,6 +428,12 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/1021-wifi-ath12k-convert-scan-timeout-to-wiphy-delayed-work.patch`
   source: https://lkml.iu.edu/2609.1/17957.html
   upstream: https://lkml.iu.edu/2609.1/17957.html
+- `patches/1030-media-iris-send-the-stream-POC-type.patch`
+  source: armada
+  upstream: local
+- `patches/1031-media-iris-stop-AV1-tier-overwriting-HEVC-tier.patch`
+  source: armada
+  upstream: local
 - `patches/0500-ROCKNIX-set-boot-fanspeed.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0500-ROCKNIX-set-boot-fanspeed.patch
   upstream: unknown
@@ -836,7 +848,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   notes: Armada selects the accepted Pocket S2 WSA2 sound-card mapping after copying the ROCKNIX DTS.
 - `dts/sm8650-konkr-pf.dts.patch`
   source: armada
-  notes: Armada selects the shared WSA2 channel mapping through a Pocket FIT-specific sound-card compatible.
+  notes: Armada selects the shared WSA2 channel mapping through a Pocket FIT-specific sound-card compatible and binds `konkr_sysbtn` to the controller MCU UART.
 
 - `patches/0505-arm64-emulate-unaligned-atomics.patch`
   source: https://github.com/bylaws/linux/commit/7ae989a43ae7e3cb8007ac21c28dacc24c9d8320
@@ -881,3 +893,16 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: armada
   upstream: local
   notes: Same for the LPASS LPI pin controller, which the SoundWire controllers keep runtime-active through their device links (held by 0603); otherwise it keeps LPASS_HW_MACRO/DCODEC voted in s2idle.
+
+- `patches/1021-wifi-ath12k-fix-single-pdev-frequency-ranges.patch`
+  source: https://lore.kernel.org/r/20260715065218.41232-1-gsh20040816@gmail.com
+  upstream: https://lore.kernel.org/r/20260715065218.41232-1-gsh20040816@gmail.com
+  notes: Backports Shenghan Gao's proposed single-pdev range fix to Linux 7.2.6. The upstream discussion identifies this as a local workaround pending a per-radio regulatory-state redesign; it is not a merged upstream architectural fix.
+- `patches/1022-wifi-ath12k-split-WCN7860-scans-by-firmware-ranges.patch`
+  source: armada
+  upstream: local
+  notes: Splits WCN7860 scans by firmware range, preserving one overall timeout and completion. Tested on KONKR Pocket FIT Elite.
+- `patches/1023-wifi-ath12k-protect-TX-during-associated-range-scans.patch`
+  source: armada
+  upstream: local
+  notes: Uses single-channel associated scans with TX draining and home-channel rest. Tested on KONKR Pocket FIT Elite.
