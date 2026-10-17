@@ -364,14 +364,6 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: armada
   upstream: local
   notes: Fixes one of the two causes of the SM8750 s2idle wake hang (the other is 0044, no longer applied) and lets the 0521 PCIe suspend OPP floor go. The bootloader's early SoCCP image sits in D0 behind the system NoC with no bus vote; the driver reloads soccp.mbn, which parks itself in D3, and the SoC then reaches CX shutdown and DDR low power in suspend. Until the TCSR D-state register shows D3 the driver holds the SoCCP's path to DDR itself, so a board without soccp.mbn (Pocket FIT Elite today) still wakes, without the deeper sleep. Odin 3 firmware: `qcom/sm8750/ayn/odin3/soccp.mbn`, from the device's modem partition.
-- `patches/0566-soc-qcom-override-the-sm8750-pcie-state-manager-power-control.patch`
-  source: armada
-  upstream: local
-  notes: The SM8750 PCIe state managers (CESTA) report a power state to the AOSS. Downstream pci-msm sets their PWR_CTRL/PWR_CTRL_MASK override at init and only clears it once it runs the state manager program, which pcie-qcom never does; without the override the PCI0_CESTA requestor stays busy in suspend and blocks AOSS deep sleep. Set once at boot on SM8750.
-- `patches/0567-soc-qcom-hand-the-sm8750-mdss-to-the-display-sequencer-at-suspend.patch`
-  source: armada
-  upstream: local
-  notes: The display RSC/CESTA keeps reporting the display active (DISPLAY requestor busy, no AOSS deep sleep) until its CRM software client releases its pass-through votes with the MDSS GDSC under hardware control; then the sequencer collapses the GDSC itself ("mode2"). Replays the downstream display-off handoff at system suspend (after the MDSS, MMCX held) and wakes the sequencer again on resume before msm. Bound by an `armada,sm8750-disp-cesta` node (Odin 3 DTS). With 0566, the Odin 3 reaches AOSS deep sleep for all of s2idle. Writing pass-through votes with the display running stalls the CRM and hangs the next CX collapse, so they are only written with the display suspended.
 - `patches/0522-PCI-host-common-let-only-endpoints-veto-d3cold.patch`
   source: armada
   upstream: local

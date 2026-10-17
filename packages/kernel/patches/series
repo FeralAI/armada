@@ -127,8 +127,6 @@ v9_20260729_qualcomm_crypto_qce_runtime_pm_interconnect.patch
 0512-PCI-qcom-skip-L23-ready-poll-on-SM8550.patch
 0513-PCI-qcom-honour-an-opp-suspend-opp-as-the-non-s2ram-memory-floor.patch
 0556-remoteproc-qcom-pas-manage-the-sm8750-soccp.patch
-0566-soc-qcom-override-the-sm8750-pcie-state-manager-power-control.patch
-0567-soc-qcom-hand-the-sm8750-mdss-to-the-display-sequencer-at-suspend.patch
 0522-PCI-host-common-let-only-endpoints-veto-d3cold.patch
 0523-regulator-qcom-rpmh-add-suspend-state-support.patch
 0524-regulator-core-apply-mem-state-for-s2idle.patch
