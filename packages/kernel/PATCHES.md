@@ -441,6 +441,9 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/1037-media-iris-decode-in-stage-1-at-the-top-clock-by-default.patch`
   source: armada
   upstream: local
+- `patches/1370-media-iris-a-resolution-change-last-buffer-is-not-an-error.patch`
+  source: https://github.com/kettlelinux/kettlelinux/blob/2b7661b4d937d7efbb487c4bba84f8705be7cc5d/kernel/patches/40-kettle/1370-media-iris-a-resolution-change-last-buffer-is-not-an-error.patch
+  upstream: unknown
 - `patches/0500-ROCKNIX-set-boot-fanspeed.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0500-ROCKNIX-set-boot-fanspeed.patch
   upstream: unknown
