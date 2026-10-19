@@ -158,6 +158,7 @@ v9_20260801_sachin_garg_media_iris_cache_work_mode_in_iris_set_stage.patch
 1034-media-iris-decode-in-stage-1-for-decode-order.patch
 1035-media-iris-run-decode-order-sessions-at-the-highest-clock.patch
 1036-media-iris-only-rescale-decoder-power-on-bitstream-queue.patch
+1037-media-iris-decode-in-stage-1-at-the-top-clock-by-default.patch
 
 # ============== System tweaks ==============
 0500-ROCKNIX-set-boot-fanspeed.patch

@@ -438,6 +438,9 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/1036-media-iris-only-rescale-decoder-power-on-bitstream-queue.patch`
   source: armada
   upstream: local
+- `patches/1037-media-iris-decode-in-stage-1-at-the-top-clock-by-default.patch`
+  source: armada
+  upstream: local
 - `patches/0500-ROCKNIX-set-boot-fanspeed.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0500-ROCKNIX-set-boot-fanspeed.patch
   upstream: unknown
