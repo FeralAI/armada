@@ -45,13 +45,18 @@ case "${soc}" in SM8250|SM8550|SM8650|SM8750) ;; *)
     echo "armada-abl-update: unsupported SoC '${soc:-unknown}'" >&2; exit 7 ;;
 esac
 
-if [ "${testing}" != 1 ]; then
-    compatible=$(tr '\0' '\n' < /sys/firmware/devicetree/base/compatible 2>/dev/null || true)
-    grep -qx "qcom,${soc,,}" <<<"${compatible}" || {
-        echo "armada-abl-update: DT compatible does not confirm ${soc}" >&2
-        exit 7
-    }
-fi
+soc_id=$(cat "${ARMADA_ABL_SOC_ID_PATH:-/sys/devices/soc0/soc_id}" 2>/dev/null || true)
+case "${soc_id}" in
+    356) soc_id_class=SM8250 ;;
+    601|603) soc_id_class=SM8550 ;;
+    682) soc_id_class=SM8650 ;;
+    639|706) soc_id_class=SM8750 ;;
+    *) soc_id_class="" ;;
+esac
+[ "${soc_id_class}" = "${soc}" ] || {
+    echo "armada-abl-update: SoC id '${soc_id:-unknown}' does not confirm ${soc}" >&2
+    exit 7
+}
 
 target_hash=$(manifest_get "ARMADA_ABL_SHA256_${soc}")
 target_name=$(manifest_get ARMADA_ABL_NAME)

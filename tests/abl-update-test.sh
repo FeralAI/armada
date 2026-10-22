@@ -95,6 +95,8 @@ ABL_A="$WORK/abl_a"
 ABL_B="$WORK/abl_b"
 EFIVARS="$WORK/efivars"
 ESRT="$WORK/esrt"
+SOC_ID="$WORK/soc_id"
+echo 603 > "$SOC_ID"
 base_env=(
     ARMADA_ABL_TESTING=1
     ARMADA_ABL_DEVICE_ID=ayn-odin-2
@@ -107,6 +109,7 @@ base_env=(
     ARMADA_TEST_SPLASH_LOG="$WORK/splash-log"
     ARMADA_EFIVARS="$EFIVARS"
     ARMADA_ESRT="$ESRT"
+    ARMADA_ABL_SOC_ID_PATH="$SOC_ID"
     ABL_VERSION_TOOL="$VERSION_TOOL"
     ARMADA_ABL_RELEASES="$catalog"
     SPLASH="$WORK/splash"
@@ -143,8 +146,16 @@ PY
 LOADER_INFO=LoaderInfo-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f
 SETTINGS=SettingsSchema-8c5f2b7e-3a41-4d6c-9e2f-5b7a1c0d4e93
 
-# Every approved ROCKNIX release migrates, even one numbered above the target.
+# socinfo must confirm the configured SoC before anything is written.
 install_both "$rocknix"
+echo 682 > "$SOC_ID"
+expect_refused "mismatched SoC id" "SoC id '682' does not confirm SM8550"
+echo 519 > "$SOC_ID"
+expect_refused "unknown SoC id" "SoC id '519' does not confirm SM8550"
+rm "$SOC_ID"
+expect_refused "missing SoC id" "SoC id 'unknown' does not confirm SM8550"
+echo 601 > "$SOC_ID"
+# Every approved ROCKNIX release migrates, even one numbered above the target.
 expect_updated "ROCKNIX 1.1.7"
 mapfile -t writes < "$WORK/writes"
 [[ "${writes[0]:-}" == "$ABL_A" && "${writes[1]:-}" == "$ABL_B" ]] ||
