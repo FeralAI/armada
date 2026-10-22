@@ -663,7 +663,7 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8750/patches/linux/0073-ASoC-wcd939x-add-HPH-PCM-HiFi-mode.patch
   upstream: unknown
   notes: Armada keeps the HPH PCM remap off the TX device, whose channel ids overlap the HPH ones, and writes the crosstalk coefficients before the compander-off return.
-- `patches/0081-ASoC-wcd939x-point-the-HPH-volume-controls-at-the-PA-gain.patch`
+- `patches/0081-ASoC-wcd939x-fix-headphone-analog-volume-controls.patch`
   source: armada
   upstream: local
 - `patches/0074-soundwire-qcom-PCM-data-port-format-enable.patch`
