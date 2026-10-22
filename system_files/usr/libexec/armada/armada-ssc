@@ -1,5 +1,6 @@
 #!/bin/bash
-# Qualcomm sensor core (SSC: gyro/accel) bring-up for the AYN Odin 2 family.
+# Qualcomm sensor core (SSC: gyro/accel) bring-up. Boards opt in through the
+# ConditionFirmware= lists in armada-ssc.service and armada-ssc-ready.service.
 #
 #   prepare  mount the Android persist, dsp_<slot> and vendor_<slot> partitions
 #            read-only and stage the hexagonfs tree hexagonrpcd serves to the
@@ -69,7 +70,7 @@ listen() {
     # Audio shares the ADSP, so wait for the sound card as well. Listeners that
     # attach long after the ADSP boots never get the sensors PD back.
     for _ in $(seq 60); do
-        [ -e /dev/fastrpc-adsp ] && grep -q AYN /proc/asound/cards 2>/dev/null && break
+        [ -e /dev/fastrpc-adsp ] && [ -e /proc/asound/card0 ] && break
         sleep 1
     done
     log "ADSP ready after ${SECONDS}s, starting listeners"
