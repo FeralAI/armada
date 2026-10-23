@@ -1,18 +1,11 @@
 [Unit]
-Description=Qualcomm sensor core (gyro) FastRPC listeners
-ConditionFirmware=|device-tree-compatible(ayn,odin2)
-ConditionFirmware=|device-tree-compatible(ayn,odin2mini)
-ConditionFirmware=|device-tree-compatible(ayn,odin2portal)
+Description=Snapdragon Sensor Core (gyro) FastRPC listener
 After=local-fs.target
-# No Conflicts=suspend.target: the ADSP stays up in s2idle, and listeners
-# restarted after boot never get the sensors PD back.
 
 [Service]
-ExecStartPre=/usr/libexec/armada/armada-ssc prepare
-ExecStart=/usr/libexec/armada/armada-ssc listen
-KillMode=control-group
-Restart=on-failure
-RestartSec=5
+ExecStart=/usr/libexec/armada/armada-ssc
+# The sensors PD cannot safely attach twice in one boot.
+Restart=no
 
 [Install]
 WantedBy=multi-user.target

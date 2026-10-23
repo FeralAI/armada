@@ -37,6 +37,7 @@ pkgs=(
 
     # RGB support package for handhelds
     /packages/armada-rgb/*.rpm
+    /packages/armada-ssc/*.rpm
 
     # Patched KWin lets devices pin Plasma's virtual keyboard to a configured output.
     /packages/kwin/kwin-[0-9]*.rpm
@@ -66,8 +67,11 @@ pkgs=(
     # Patched InputPlumber: dpad signed-axis fix
     /packages/inputplumber/inputplumber-*.rpm
 
-    # Patched libssc for InputPlumber's SSC (gyro) source: LIBSSC_SAMPLE_RATE
+    # Patched libssc: lets InputPlumber pick the gyro sample rate
     /packages/libssc/libssc-[0-9]*.rpm
+
+    # Patched hexagonrpc: sns_registry for the Portal's sensors PD
+    /packages/hexagonrpc/hexagonrpc-[0-9]*.rpm
 
     # FEX Emu for emulating x86_64 applications
     /packages/fex/fex-emu-*.rpm
@@ -78,6 +82,3 @@ pkgs=(
 )
 
 dnf5 -y install --setopt=install_weak_deps=False "${pkgs[@]}"
-
-# InputPlumber's SSC driver dlopens libssc's unversioned development soname.
-ln -sf libssc.so.2 /usr/lib64/libssc.so
