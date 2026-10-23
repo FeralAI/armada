@@ -714,6 +714,10 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0622-drm-msm-a6xx-mask-the-hfi-interrupt-before-booting-the-gmu.patch`
   source: armada
   upstream: local
+- `patches/0623-arm64-dts-qcom-sm8550-sm8650-add-the-ADSP-FastRPC-remote-heap.patch`
+  source: https://github.com/hashtagbasit/SteamOS-ARM-Port/blob/162a3d97e61d94e0740193a8af49fc95de408439/external-and-mods/kernel-sm8550/dts/qcs8550-ayn-odin2-gyro.dtsi
+  upstream: not submitted
+  notes: justjoseorg's heap node, memory-region and qcom,vmids, moved from a board file into the SM8550, QCS8550 and SM8650 SoC dtsi so every board on those SoCs has them; qcom,fastrpc-adsp-sensors-pdr is dropped because this kernel does not read it.
 - `dts/qcs8550-ayaneo-pocketace.dts`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/linux/dts/qcom/qcs8550-ayaneo-pocketace.dts
 - `dts/qcs8550-ayaneo-pocket-common.dtsi`
@@ -831,14 +835,9 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `dts/qcs8550-ayn-odin2.dts.patch`
   source: armada
   upstream: local
-  notes: Keeps the panel and touch IO supply on in suspend, and gives the ADSP FastRPC node a 12 MiB remote heap, without which the sensors process (IMU) cannot start (heap node and fastrpc properties from https://github.com/hashtagbasit/SteamOS-ARM-Port/blob/162a3d97e61d94e0740193a8af49fc95de408439/external-and-mods/kernel-sm8550/dts/qcs8550-ayn-odin2-gyro.dtsi, by justjoseorg).
-- `dts/qcs8550-ayn-odin2mini.dts.patch`
-  source: armada
-  upstream: local
-  notes: Gives the ADSP FastRPC node a 12 MiB remote heap, without which the sensors process (IMU) cannot start (heap node and fastrpc properties from https://github.com/hashtagbasit/SteamOS-ARM-Port/blob/162a3d97e61d94e0740193a8af49fc95de408439/external-and-mods/kernel-sm8550/dts/qcs8550-ayn-odin2-gyro.dtsi, by justjoseorg).
 - `dts/qcs8550-ayn-odin2portal.dts.patch`
   source: armada
-  notes: Adds the back buttons from the Odin 2 DTS into the Odin 2 Portal DTS, and gives the ADSP FastRPC node a 12 MiB remote heap, without which the sensors process (IMU) cannot start (heap node and fastrpc properties from https://github.com/hashtagbasit/SteamOS-ARM-Port/blob/162a3d97e61d94e0740193a8af49fc95de408439/external-and-mods/kernel-sm8550/dts/qcs8550-ayn-odin2-gyro.dtsi, by justjoseorg).
+  notes: Adds the back buttons from the Odin 2 DTS into the Odin 2 Portal DTS
 - `dts/qcs8550-retroidpocket-rp6.dts.patch`
   source: armada
   notes: Armada switches Pocket 6 from ROCKNIX's Odin 2 fallback to audio firmware extracted from a Pocket 6 vendor image, and drives its haptics actuator as an LRA with the stock Android values (board-id 0x1001f overlay) instead of the inherited Odin 2 ERM config.
