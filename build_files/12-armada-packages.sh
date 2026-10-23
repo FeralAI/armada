@@ -35,6 +35,9 @@ pkgs=(
     # Boot splash for Armada, runs all the way from initramfs into gamescope
     /packages/armada-splash/*.rpm
 
+    # OpenABL payloads and the shutdown ABL updater
+    /packages/openabl-updater/*.rpm
+
     # RGB support package for handhelds
     /packages/armada-rgb/*.rpm
 
