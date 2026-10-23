@@ -55,25 +55,85 @@ for name in sorted(os.listdir(src)):
         for key, item in items.items():
             if isinstance(item, dict) and item.get("ver", "0") != "0":
                 print(f"review: {group}.{key} = {item.get('data')}")
-    shutil.copyfile(path, os.path.join(dst, name))
+    if group == "sns_reg_config":
+        # Image files have mtime 0; other recorded mtimes make the ADSP re-parse.
+        for key, item in items.items():
+            if isinstance(item, dict):
+                item["data"] = "0"
+        with open(os.path.join(dst, name), "w") as f:
+            json.dump(entry, f, separators=(",", ":"))
+    else:
+        shutil.copyfile(path, os.path.join(dst, name))
     kept += 1
 print(f"registry: {kept} entries")
 EOF
 
 fingerprint=$(sed -n 's/^ro.vendor.build.fingerprint=//p' "$vendor/build.prop" 2>/dev/null | head -1 || true)
-# The registry must suit the ADSP firmware this image loads.
-adsp=""
-for fw in /sys/class/remoteproc/remoteproc*/firmware; do
-    case "$(cat "$fw" 2>/dev/null)" in
-        *adsp*) adsp=/usr/lib/firmware/$(cat "$fw") ;;
+if [ -z "$fingerprint" ]; then
+    echo "no ro.vendor.build.fingerprint in $vendor/build.prop" >&2
+    exit 1
+fi
+# The registry is only valid for the exact ADSP firmware running now.
+fw_path=$(cat /sys/module/firmware_class/parameters/path)
+if [ -n "$fw_path" ]; then
+    echo "firmware_class.path is set; the ADSP may not run this image's firmware" >&2
+    exit 1
+fi
+adsp_names=""
+running=""
+for rproc in /sys/class/remoteproc/remoteproc*; do
+    case "$(cat "$rproc/name" 2>/dev/null)" in
+        adsp)
+            adsp_names=$(tr '\0' ' ' < "$rproc/device/of_node/firmware-name")
+            running=$(cat "$rproc/firmware")
+            ;;
     esac
 done
-adsp_version=""
-if [ -f "$adsp" ]; then
-    adsp_version=$(grep -a -o -m1 'QC_IMAGE_VERSION_STRING=[A-Za-z0-9._-]*' "$adsp" | cut -d= -f2 || true)
+if [ -z "$adsp_names" ]; then
+    echo "no ADSP remoteproc found" >&2
+    exit 1
 fi
-printf 'device=%s\nvendor_fingerprint=%s\nadsp_firmware=%s\nadsp_firmware_path=%s\ncaptured=%s\n' \
-    "$id" "${fingerprint:-unknown}" "${adsp_version:-unknown}" "${adsp#/usr/lib/firmware/}" \
+if [ "$running" != "${adsp_names%% *}" ]; then
+    echo "ADSP firmware set to $running, not the DT's ${adsp_names%% *}" >&2
+    exit 1
+fi
+fw=/usr/lib/firmware
+files=""
+for name in $adsp_names; do
+    files="$files $name"
+    # Split images load their segments as <name>.bNN.
+    if [ "${name%.mdt}" != "$name" ]; then
+        for seg in "$fw/${name%.mdt}".b[0-9][0-9]; do
+            [ -e "$seg" ] && files="$files ${seg#"$fw"/}"
+        done
+    fi
+done
+adsp=""
+adsp_sha256=""
+for name in $files; do
+    # The kernel searches these before /usr/lib/firmware.
+    for shadow in "$fw/updates/$(uname -r)" "$fw/updates" "$fw/$(uname -r)"; do
+        for f in "$shadow/$name" "$shadow/$name.xz" "$shadow/$name.zst"; do
+            if [ -e "$f" ]; then
+                echo "$f overrides $fw/$name" >&2
+                exit 1
+            fi
+        done
+    done
+    if [ ! -f "$fw/$name" ]; then
+        echo "missing $fw/$name" >&2
+        exit 1
+    fi
+    [ -n "$adsp" ] || adsp=$fw/$name
+    adsp_sha256="$adsp_sha256 $name:$(sha256sum "$fw/$name" | cut -d' ' -f1)"
+done
+adsp_version=$(grep -a -o -m1 'QC_IMAGE_VERSION_STRING=[A-Za-z0-9._-]*' "$adsp" | cut -d= -f2 || true)
+if [ -z "$adsp_version" ]; then
+    echo "no QC_IMAGE_VERSION_STRING in $adsp" >&2
+    exit 1
+fi
+printf 'device=%s\nvendor_fingerprint=%s\nadsp_firmware=%s\nadsp_sha256=%s\ncaptured=%s\n' \
+    "$id" "$fingerprint" "$adsp_version" "${adsp_sha256# }" \
     "$(date -u +%Y-%m-%d)" > "$root/SOURCE"
 
 tar --sort=name --owner=0 --group=0 --numeric-owner --mtime=@0 \

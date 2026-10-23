@@ -15,11 +15,19 @@ Each archive is a straight copy from the board's stock Android partitions:
 | `sensors/registry/` | `persist/sensors/registry/registry/` |
 | `sensors/sns_reg_version` | `persist/sensors/registry/sns_reg_version` |
 
+One change: `registry/sns_reg_config` records each config file's mtime, and
+the image ships every file with mtime 0, so the capture writes 0 there.
+Otherwise the ADSP re-parses every config at boot, which the Thor does not
+survive.
+
 `socinfo` links to `/sys/devices/soc0`, and `SOURCE` records the Android build
-and the ADSP firmware the data was captured with. The registry is only valid
-for that firmware, so the image build fails if the board's firmware under
-`system_files/usr/lib/firmware/qcom/` has a different version; recapture after
-updating it.
+and the sha256 of each ADSP firmware file the board was running at capture.
+The registry is only valid for that firmware, so the image build fails if the
+board's files under `system_files/usr/lib/firmware/qcom/` differ, even with the
+same version string; recapture on an image that runs the new firmware. Split
+images (`.mdt`) are hashed with every `.bNN` segment. The capture refuses to
+run when the ADSP may be running other firmware: `firmware_class.path` set, a
+runtime firmware override, or a copy in a directory the kernel searches first.
 
 ## Capture
 

@@ -6,13 +6,19 @@ cp -a /ctx/system_files/. /
 # The SSC registry is only valid for the ADSP firmware it was captured with;
 # see packages/armada-ssc/README.md.
 for source in /usr/share/armada/ssc/*/SOURCE; do
-    version=$(sed -n 's/^adsp_firmware=//p' "${source}")
-    firmware="/usr/lib/firmware/$(sed -n 's/^adsp_firmware_path=//p' "${source}")"
-    shipped=$(grep -ao -m1 'QC_IMAGE_VERSION_STRING=[A-Za-z0-9._-]*' "${firmware}" | cut -d= -f2)
-    [[ -n ${version} && ${shipped} == "${version}" ]] || {
-        echo "ERROR: ${source} was captured with ADSP ${version:-unknown}; ${firmware} is ${shipped:-unknown}" >&2
+    hashes=$(sed -n 's/^adsp_sha256=//p' "${source}")
+    [[ -n ${hashes} ]] || {
+        echo "ERROR: ${source} records no ADSP firmware hashes; recapture" >&2
         exit 1
     }
+    for entry in ${hashes}; do
+        firmware="/usr/lib/firmware/${entry%%:*}"
+        shipped=$(sha256sum "${firmware}" 2>/dev/null | cut -d' ' -f1)
+        [[ ${shipped} == "${entry#*:}" ]] || {
+            echo "ERROR: ${source} was captured with a different ${firmware}; recapture on an image that runs it" >&2
+            exit 1
+        }
+    done
 done
 
 # feedbackd's role-routing sinks can wedge Steam audio during session startup.
