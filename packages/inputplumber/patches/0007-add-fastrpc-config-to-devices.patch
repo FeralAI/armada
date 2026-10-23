@@ -6,7 +6,8 @@ Subject: [PATCH] add fastrpc config to devices
 ---
  .../usr/share/inputplumber/devices/50-ayn_odin2.yaml   | 11 +++++++++++
  .../usr/share/inputplumber/devices/50-ayn_odin3.yaml   | 11 +++++++++++
- 2 files changed, 22 insertions(+)
+ .../usr/share/inputplumber/devices/50-ayn_thor.yaml    | 11 +++++++++++
+ 3 files changed, 33 insertions(+)
 
 diff --git a/rootfs/usr/share/inputplumber/devices/50-ayn_odin2.yaml b/rootfs/usr/share/inputplumber/devices/50-ayn_odin2.yaml
 index a9beeb5..ba8b6af 100644
@@ -43,6 +44,27 @@ index 885ad4f..2b23de1 100644
 +    config:
 +      imu:
 +        # QMI8658 orientation; an LSM6DSO unit may need another matrix
++        mount_matrix:
++          x: [0, -1, 0]
++          y: [0, 0, 1]
++          z: [-1, 0, 0]
++
+ target_devices:
+   - xbox-elite
+diff --git a/rootfs/usr/share/inputplumber/devices/50-ayn_thor.yaml b/rootfs/usr/share/inputplumber/devices/50-ayn_thor.yaml
+index 1844aee..f178e32 100644
+--- a/rootfs/usr/share/inputplumber/devices/50-ayn_thor.yaml
++++ b/rootfs/usr/share/inputplumber/devices/50-ayn_thor.yaml
+@@ -30,5 +30,16 @@ source_devices:
+       phys_path: gpio-keys/input0
+       handler: event*
+ 
++  - group: imu
++    fastrpc:
++      name: fastrpc-adsp
++    config:
++      imu:
++        # SH5001 orientation
 +        mount_matrix:
 +          x: [0, -1, 0]
 +          y: [0, 0, 1]
