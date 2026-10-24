@@ -1258,7 +1258,10 @@ check("plugin freq_limits CPU policies",
           {"id": 7, "cpus": "7", "khz": [844800, 1670400, 1785600, 2841600],
            "mhz": [844, 1670, 1785, 2841]},
       ])
-check("plugin freq_limits keys", set(plugin_limits) == {"gpuMhz", "gpuStockMaxMhz", "gpuStockHz", "gpuHz", "cpuPolicies"})
+check("plugin freq_limits keys", set(plugin_limits) == {"gpuMhz", "gpuStockMaxMhz", "gpuStockHz", "gpuHz", "cpuPolicies", "cpuTopology"})
+check("plugin freq_limits CPU topology",
+      plugin_system.freq_limits(env={"ARMADA_BIG_CORES": "2-7", "ARMADA_PRIME_CORES": "7", "ARMADA_LITTLE_CORES": "0-1"},
+                                sysfs=plugin_system.Path(sysfs))["cpuTopology"] == {"big": "2-7", "prime": "7", "little": "0-1"})
 limits8550 = plugin_system.freq_limits(env={}, sysfs=plugin_system.Path(sys8550))
 check("plugin freq_limits SM8550 topology",
       [(pol["id"], pol["cpus"]) for pol in limits8550["cpuPolicies"]] == [(0, "0-2"), (3, "3-6"), (7, "7")])

@@ -359,6 +359,11 @@ def freq_limits(env=None, sysfs=Path("/sys")):
         "gpuStockHz": stock_hz,
         "gpuHz": gpu_hz,
         "cpuPolicies": cpu_policies(sysfs),
+        "cpuTopology": {
+            "big": str(env.get("ARMADA_BIG_CORES", "")).strip(),
+            "prime": str(env.get("ARMADA_PRIME_CORES", "")).strip(),
+            "little": str(env.get("ARMADA_LITTLE_CORES", "")).strip(),
+        },
     }
 
 

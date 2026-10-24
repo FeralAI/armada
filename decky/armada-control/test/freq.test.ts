@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { clusterRoles, derivedKhz, indexAtMost, isOverclocked, presetKhz } from "../src/lib/freq.ts";
+import { clusterRoles, derivedKhz, indexAtMost, isOverclocked, parseCpuList, presetKhz } from "../src/lib/freq.ts";
 
 const ladder = [305, 400, 441, 587, 925];
 
@@ -37,4 +37,37 @@ test("clusterRoles names clusters by their top frequency", () => {
   assert.deepEqual(clusterRoles([policy(0, 3532800), policy(6, 4320000)]), ["big", "prime"]);
   assert.deepEqual(clusterRoles([policy(0, 2016000)]), ["big"]);
   assert.deepEqual(clusterRoles([policy(0, 2016000), policy(4, 2016000)]), ["big1", "big2"]);
+});
+
+test("parseCpuList expands ranges and skips junk", () => {
+  assert.deepEqual(parseCpuList("0-2,5,7"), [0, 1, 2, 5, 7]);
+  assert.deepEqual(parseCpuList(""), []);
+  assert.deepEqual(parseCpuList("x,4-2"), []);
+});
+
+test("clusterRoles follows topology when the prime core is not the fastest cluster", () => {
+  // SM8650: the X4 (cpu7) tops out below the cpu2-4 A720 cluster in scaling_available_frequencies
+  const sm8650 = [
+    { id: 0, cpus: "0-1", khz: [300000, 2265600] },
+    { id: 2, cpus: "2-4", khz: [300000, 3148800] },
+    { id: 5, cpus: "5-6", khz: [300000, 2956800] },
+    { id: 7, cpus: "7", khz: [300000, 3052800] },
+  ];
+  assert.deepEqual(clusterRoles(sm8650), ["little", "prime", "big1", "big2"]);
+  assert.deepEqual(clusterRoles(sm8650, { big: "2-7", prime: "7", little: "0-1" }), ["little", "big2", "big1", "prime"]);
+  assert.deepEqual(clusterRoles([{ id: 0, cpus: "0-5", khz: [3532800] }, { id: 6, cpus: "6-7", khz: [4320000] }], { big: "0-7", prime: "6-7", little: "" }), ["big", "prime"]);
+  assert.deepEqual(clusterRoles([{ id: 0, cpus: "0-3", khz: [1804800] }, { id: 4, cpus: "4-6", khz: [2419200] }, { id: 7, cpus: "7", khz: [2841600] }], { prime: "9", little: "" }), ["little", "big", "prime"]);
+});
+
+test("clusterRoles keeps clusters listed as big out of the frequency fallback", () => {
+  const policies = [
+    { id: 0, cpus: "0-1", khz: [2265600] },
+    { id: 2, cpus: "2-4", khz: [3148800] },
+    { id: 5, cpus: "5-6", khz: [2956800] },
+    { id: 7, cpus: "7", khz: [3052800] },
+  ];
+  // only BIG set: the fastest cluster is listed as big, so no prime is guessed
+  assert.deepEqual(clusterRoles(policies, { big: "2-7" }), ["little", "big3", "big1", "big2"]);
+  // BIG covering every cluster blocks the little guess
+  assert.deepEqual(clusterRoles([{ id: 0, cpus: "0-1", khz: [2000000] }, { id: 2, cpus: "2-5", khz: [2500000] }, { id: 6, cpus: "6-7", khz: [3000000] }], { big: "0-7", prime: "6-7" }), ["big1", "big2", "prime"]);
 });

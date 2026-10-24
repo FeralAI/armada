@@ -33,7 +33,7 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
     label: translateLabel(titleCase(level)),
   }));
   const cpuPolicies = config.freqLimits?.cpuPolicies ?? [];
-  const cpuRoles = clusterRoles(cpuPolicies).map((role) => (/^big\d+$/.test(role) ? t("cpu.bigN", { n: role.slice(3) }) : t(`cpu.${role}` as TranslationKey)));
+  const cpuRoles = clusterRoles(cpuPolicies, config.freqLimits?.cpuTopology).map((role) => (/^big\d+$/.test(role) ? t("cpu.bigN", { n: role.slice(3) }) : t(`cpu.${role}` as TranslationKey)));
   const clearedCpuCaps = Object.fromEntries(cpuPolicies.map((policy) => [policyKey(policy), null]));
   const displayKhz = (policy: CpuPolicy, current: PowerProfile) => {
     const preset = presetKhz(presets, current.cpu_underclock || "", policyKey(policy));

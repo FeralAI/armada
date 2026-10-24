@@ -22,6 +22,13 @@ export interface FreqLimits {
   gpuMhz: number[];
   gpuStockMaxMhz: number;
   cpuPolicies: CpuPolicy[];
+  cpuTopology?: CpuTopology;
+}
+
+export interface CpuTopology {
+  big: string;
+  prime: string;
+  little: string;
 }
 
 export interface FanCurve {

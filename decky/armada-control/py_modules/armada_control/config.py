@@ -38,7 +38,7 @@ def build_config(include_games=True):
     return {
         "power": power,
         "powerDefaults": resolve_limits(factory_power_defaults(), limits, soc),
-        "freqLimits": {key: limits[key] for key in ("gpuMhz", "gpuStockMaxMhz", "cpuPolicies")},
+        "freqLimits": {key: limits[key] for key in ("gpuMhz", "gpuStockMaxMhz", "cpuPolicies", "cpuTopology")},
         "tweaks": load_tweaks(),
         "installedGames": installed_games() if include_games else [],
         "fexProfiles": fex_profile_labels(fex_contract),
