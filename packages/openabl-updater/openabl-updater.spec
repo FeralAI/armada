@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 # Bump with a changelog entry; %%prep checks each image against the release's .sha256.
-%global openabl_version 1.1
+%global openabl_version 1.2
 %global openabl_url https://github.com/OpenHandheldCollective/OpenABL
 # Shipped SoCs, has to be updated if Armada adds more SoCs that need OpenABL
 %global openabl_socs SM8250 SM8550 SM8650 SM8750
