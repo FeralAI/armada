@@ -1,4 +1,4 @@
-From 227a54cd54cd7051a9cbe72dfadb20dc7aea8d44 Mon Sep 17 00:00:00 2001
+From d8b460d4f00eb21fe9c662413686a6e43012a5e2 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Thu, 21 May 2026 10:46:13 +0800
 Subject: [PATCH 01/11] refactor(config): add Default for MountMatrix
@@ -31,8 +31,11 @@ index 4a8477d..ff1eb7b 100644
  #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
  #[serde(rename_all = "snake_case")]
  pub struct EventsConfig {
+-- 
+2.56.0
 
-From a594961eb6fd7b96a0ca1cc19b02c41b2a8bd828 Mon Sep 17 00:00:00 2001
+
+From b1588e36702d538d5fa0b3376e16043c3dee6e4c Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Thu, 21 May 2026 10:57:08 +0800
 Subject: [PATCH 02/11] build(Cargo.toml): add libloading dependency
@@ -45,7 +48,7 @@ Signed-off-by: Gianni Spadoni <me@gio.blue>
  1 file changed, 1 insertion(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 9e41931..c75e09c 100644
+index 2ef4a34..139d6cb 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -122,6 +122,7 @@ glob-match = "0.2.1"
@@ -56,8 +59,11 @@ index 9e41931..c75e09c 100644
  # Omit trace logging for release builds
  log = { version = "0.4.29", features = [
    "max_level_trace",
+-- 
+2.56.0
 
-From cd0654288e8c647d8eb946c942e340d7ee039407 Mon Sep 17 00:00:00 2001
+
+From 8f9028b100943c0694a0d79fa1619325093b1e6b Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Thu, 21 May 2026 11:06:48 +0800
 Subject: [PATCH 03/11] feat(Hardware Support): Qualcomm SSC sensors through
@@ -835,7 +841,7 @@ index 37b1be0..4a23adb 100644
                          return Err(format!(
                              "Unspported subsystem: {subsystem}, unable to add source device {}",
 diff --git a/src/input/manager.rs b/src/input/manager.rs
-index 2c55128..aae8efb 100644
+index 4057acd..be69c36 100644
 --- a/src/input/manager.rs
 +++ b/src/input/manager.rs
 @@ -27,15 +27,15 @@ use crate::config::{
@@ -858,7 +864,7 @@ index 2c55128..aae8efb 100644
      target::{TargetDevice, TargetDeviceTypeId},
  };
  use crate::udev::{
-@@ -1389,6 +1389,7 @@ impl Manager {
+@@ -1392,6 +1392,7 @@ impl Manager {
                  "iio" => iio::get_dbus_path(sys_name),
                  "leds" => led::get_dbus_path(sys_name),
                  "tty" => tty::get_dbus_path(sys_name),
@@ -866,7 +872,7 @@ index 2c55128..aae8efb 100644
                  _ => return Err(format!("Device subsystem not supported: {subsystem:?}").into()),
              };
              let conn = self.dbus.connection().clone();
-@@ -1416,6 +1417,10 @@ impl Manager {
+@@ -1419,6 +1420,10 @@ impl Manager {
                      let tty_iface = SourceTtyInterface::new(dev);
                      dbus.register(tty_iface);
                  }
@@ -877,7 +883,7 @@ index 2c55128..aae8efb 100644
                  _ => (),
              }
  
-@@ -1596,6 +1601,24 @@ impl Manager {
+@@ -1599,6 +1604,24 @@ impl Manager {
                  }
              }
  
@@ -902,7 +908,7 @@ index 2c55128..aae8efb 100644
              _ => {
                  return Err(format!("Device subsystem not supported: {subsystem:?}").into());
              }
-@@ -1723,13 +1746,11 @@ impl Manager {
+@@ -1726,13 +1749,11 @@ impl Manager {
                  WatchEvent::Create { name, base_path } => {
                      let subsystem = {
                          match base_path.as_str() {
@@ -921,7 +927,7 @@ index 2c55128..aae8efb 100644
                              "/dev/input" => Some("input"),
  
                              _ => None,
-@@ -1836,6 +1857,15 @@ impl Manager {
+@@ -1839,6 +1860,15 @@ impl Manager {
          let tty_devices = tty_devices.into_iter().map(|dev| dev.into()).collect();
          Manager::discover_devices(cmd_tx, tty_devices).await?;
  
@@ -1170,11 +1176,11 @@ index 0000000..e43f845
 +    Capability::Gyroscope(Source::Center),
 +];
 diff --git a/src/input/source/mod.rs b/src/input/source/mod.rs
-index 07401e0..463a69d 100644
+index c4e1732..a3ff90b 100644
 --- a/src/input/source/mod.rs
 +++ b/src/input/source/mod.rs
-@@ -16,8 +16,8 @@ use tokio::sync::mpsc::{self, error::TryRecvError};
- use crate::config;
+@@ -22,8 +22,8 @@ use crate::{
+ };
  
  use self::{
 -    client::SourceDeviceClient, command::SourceCommand, evdev::EventDevice, hidraw::HidRawDevice,
@@ -1184,7 +1190,7 @@ index 07401e0..463a69d 100644
  };
  
  use super::{
-@@ -32,6 +32,7 @@ use super::{
+@@ -38,6 +38,7 @@ use super::{
  pub mod client;
  pub mod command;
  pub mod evdev;
@@ -1192,7 +1198,7 @@ index 07401e0..463a69d 100644
  pub mod hidraw;
  pub mod iio;
  pub mod led;
-@@ -638,6 +639,7 @@ pub(crate) trait SourceDeviceCompatible {
+@@ -644,6 +645,7 @@ pub(crate) trait SourceDeviceCompatible {
  #[derive(Debug)]
  pub enum SourceDevice {
      Event(EventDevice),
@@ -1200,7 +1206,7 @@ index 07401e0..463a69d 100644
      HidRaw(HidRawDevice),
      Iio(IioDevice),
      Led(LedDevice),
-@@ -649,6 +651,7 @@ impl SourceDevice {
+@@ -655,6 +657,7 @@ impl SourceDevice {
      pub fn get_device_ref(&self) -> DeviceInfoRef<'_> {
          match self {
              SourceDevice::Event(device) => device.get_device_ref(),
@@ -1208,7 +1214,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.get_device_ref(),
              SourceDevice::Iio(device) => device.get_device_ref(),
              SourceDevice::Led(device) => device.get_device_ref(),
-@@ -660,6 +663,7 @@ impl SourceDevice {
+@@ -666,6 +669,7 @@ impl SourceDevice {
      pub fn get_id(&self) -> String {
          match self {
              SourceDevice::Event(device) => device.get_id(),
@@ -1216,7 +1222,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.get_id(),
              SourceDevice::Iio(device) => device.get_id(),
              SourceDevice::Led(device) => device.get_id(),
-@@ -671,6 +675,7 @@ impl SourceDevice {
+@@ -677,6 +681,7 @@ impl SourceDevice {
      pub fn get_persistent_id(&self) -> Option<String> {
          match self {
              SourceDevice::Event(device) => device.get_serial(),
@@ -1224,7 +1230,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.get_serial(),
              SourceDevice::Iio(_) => None,
              SourceDevice::Led(_) => None,
-@@ -682,6 +687,7 @@ impl SourceDevice {
+@@ -688,6 +693,7 @@ impl SourceDevice {
      pub fn client(&self) -> SourceDeviceClient {
          match self {
              SourceDevice::Event(device) => device.client(),
@@ -1232,7 +1238,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.client(),
              SourceDevice::Iio(device) => device.client(),
              SourceDevice::Led(device) => device.client(),
-@@ -693,6 +699,7 @@ impl SourceDevice {
+@@ -699,6 +705,7 @@ impl SourceDevice {
      pub async fn run(self) -> Result<(), Box<dyn Error>> {
          match self {
              SourceDevice::Event(device) => device.run().await,
@@ -1240,7 +1246,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.run().await,
              SourceDevice::Iio(device) => device.run().await,
              SourceDevice::Led(device) => device.run().await,
-@@ -704,6 +711,7 @@ impl SourceDevice {
+@@ -710,6 +717,7 @@ impl SourceDevice {
      pub fn get_capabilities(&self) -> Result<Vec<Capability>, InputError> {
          match self {
              SourceDevice::Event(device) => device.get_capabilities(),
@@ -1248,7 +1254,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.get_capabilities(),
              SourceDevice::Iio(device) => device.get_capabilities(),
              SourceDevice::Led(device) => device.get_capabilities(),
-@@ -715,6 +723,7 @@ impl SourceDevice {
+@@ -721,6 +729,7 @@ impl SourceDevice {
      pub fn get_output_capabilities(&self) -> Result<Vec<OutputCapability>, OutputError> {
          match self {
              SourceDevice::Event(device) => device.get_output_capabilities(),
@@ -1256,7 +1262,7 @@ index 07401e0..463a69d 100644
              SourceDevice::HidRaw(device) => device.get_output_capabilities(),
              SourceDevice::Iio(device) => device.get_output_capabilities(),
              SourceDevice::Led(device) => device.get_output_capabilities(),
-@@ -726,6 +735,7 @@ impl SourceDevice {
+@@ -732,6 +741,7 @@ impl SourceDevice {
      pub fn get_device_path(&self) -> String {
          match self {
              SourceDevice::Event(device) => device.get_device_path(),
@@ -1349,8 +1355,11 @@ index 719a91a..09c1cba 100644
          let sysname = device.sysname().to_string_lossy().to_string();
          let syspath = device.syspath().to_string_lossy().to_string();
          let properties = device.get_properties();
+-- 
+2.56.0
 
-From 3602e4bfca519c1768c4ceeb2b6e535f3e89fb72 Mon Sep 17 00:00:00 2001
+
+From fcc07d4903d359533d33526a3e547729d6b1ed30 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Thu, 21 May 2026 11:09:42 +0800
 Subject: [PATCH 04/11] docs(bindings): Add FastRPC dbus-xml bindings
@@ -1414,8 +1423,11 @@ index 0000000..fb5546a
 +  </interface>
 +</node>
 +
+-- 
+2.56.0
 
-From 3eb3dae78398cd371a7251f54c3f63e03009ef20 Mon Sep 17 00:00:00 2001
+
+From 2e49fb607d69e6e1e5af4dfbec0f0f28c2722d47 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Thu, 21 May 2026 11:12:57 +0800
 Subject: [PATCH 05/11] docs(schema): add FastRPC section in composite device
@@ -1461,8 +1473,11 @@ index 461be3d..0659cb2 100644
      "Hidraw": {
        "type": "object",
        "additionalProperties": false,
+-- 
+2.56.0
 
-From 1c37264c8382ac32d2a3878b3514299b2a178f54 Mon Sep 17 00:00:00 2001
+
+From 8efbeccf2797b579cf0d4c11692697bfc0c91f97 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Sun, 24 May 2026 15:37:36 +0800
 Subject: [PATCH 06/11] fix(ssc): cancel sensor init after a few seconds
@@ -1639,8 +1654,11 @@ index 2bc9289..e0ec919 100644
          };
  
          if let Some(v) = glib_error(err) {
+-- 
+2.56.0
 
-From 642460247f1de98f0fa30a9bcf50f78664a4a149 Mon Sep 17 00:00:00 2001
+
+From 4acc3e78cbbf5487b6d69e670b09e3b722460228 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Tue, 26 May 2026 14:48:49 +0800
 Subject: [PATCH 07/11] refactor(ssc): fix tests, add quark strings to errors
@@ -1834,8 +1852,11 @@ index 09c1cba..bd8aaae 100644
      fs::{self, read_link},
      path::{Path, PathBuf},
  };
+-- 
+2.56.0
 
-From c03c833372325998457d6f74ee9465689727d378 Mon Sep 17 00:00:00 2001
+
+From 6b092f32b7bc393e9385becca94bc09bf49bd267 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Sat, 30 May 2026 16:20:34 +0800
 Subject: [PATCH 08/11] refactor(imus): thread safety comment NOTE -> SAFETY
@@ -1861,10 +1882,10 @@ index 837c60b..15c5f78 100644
  unsafe impl Send for SscImu {}
  
 diff --git a/src/input/source/iio/accel_gyro_3d.rs b/src/input/source/iio/accel_gyro_3d.rs
-index 9b807a6..e81e3f6 100644
+index 53af26e..df99891 100644
 --- a/src/input/source/iio/accel_gyro_3d.rs
 +++ b/src/input/source/iio/accel_gyro_3d.rs
-@@ -78,6 +78,6 @@ impl Debug for AccelGyro3dImu {
+@@ -83,6 +83,6 @@ impl Debug for AccelGyro3dImu {
      }
  }
  
@@ -1873,10 +1894,10 @@ index 9b807a6..e81e3f6 100644
  // a single thread.
  unsafe impl Send for AccelGyro3dImu {}
 diff --git a/src/input/source/iio/bmi_imu.rs b/src/input/source/iio/bmi_imu.rs
-index b5321c9..2821c53 100644
+index 3456115..27f0ff4 100644
 --- a/src/input/source/iio/bmi_imu.rs
 +++ b/src/input/source/iio/bmi_imu.rs
-@@ -72,6 +72,6 @@ impl Debug for BmiImu {
+@@ -82,6 +82,6 @@ impl Debug for BmiImu {
      }
  }
  
@@ -1884,8 +1905,11 @@ index b5321c9..2821c53 100644
 +// SAFETY: Mark this struct as thread-safe as it will only ever be called from
  // a single thread.
  unsafe impl Send for BmiImu {}
+-- 
+2.56.0
 
-From ea4f5df483e63998dcaf252925937a0532b0440c Mon Sep 17 00:00:00 2001
+
+From b616fd23bf73a959d49dde1e45d1ab1adf55bbdd Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Sat, 30 May 2026 16:33:39 +0800
 Subject: [PATCH 09/11] refactor(ssc): Add SAFETY comment to
@@ -1914,8 +1938,11 @@ index 3ff0cd4..eb97f88 100644
          unsafe { (self.runtime.libglib.g_main_context_iteration)(std::ptr::null_mut(), GFALSE) };
  
          let mut events: Vec<Event> = vec![];
+-- 
+2.56.0
 
-From 10f10adf0c5219390fb5b874df74b273612ae395 Mon Sep 17 00:00:00 2001
+
+From 6e71d914cfdb3cb7d9c551d6d3c84c5452d70476 Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Sat, 30 May 2026 19:37:05 +0800
 Subject: [PATCH 10/11] refactor(ssc): rewrite bindings, use Arc for
@@ -2744,8 +2771,11 @@ index 4936d0c..5ccff21 100644
 +        }
      }
  }
+-- 
+2.56.0
 
-From 442d007a9fac9d38ebe110e7fd440c5c192bb942 Mon Sep 17 00:00:00 2001
+
+From 697892880233f2939237a67190b81390d0c7b6da Mon Sep 17 00:00:00 2001
 From: Gianni Spadoni <me@gio.blue>
 Date: Sat, 30 May 2026 19:52:56 +0800
 Subject: [PATCH 11/11] refactor(ssc): fix up comment wording in bindings.rs
@@ -2771,3 +2801,6 @@ index ba1d5bf..ff93513 100644
          unsafe {
              Ok(Self {
                  g_main_context_iteration: *load_symbol!(glib, "g_main_context_iteration")?,
+-- 
+2.56.0
+
