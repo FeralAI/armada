@@ -1,4 +1,4 @@
-From f5a3cc346ea8cc1244fe0f5800047744b0a23695 Mon Sep 17 00:00:00 2001
+From af2a41368d1aa6cf3cbb155d4c54e44f9cddd104 Mon Sep 17 00:00:00 2001
 From: virtudude <virtudude@protonmail.com>
 Date: Sat, 24 Oct 2026 21:32:39 -0400
 Subject: [PATCH] feat(ssc): remove the gyro bias learned while the device
@@ -10,8 +10,7 @@ Portal, up to 3.6 deg/s on an Odin 3). Port GamepadMotionHelpers'
 stillness calibration, whose thresholds adapt to each sensor's noise
 floor, so the noisier QMI8658 in the Odin 3 calibrates too. It needs a
 fresh accelerometer sample, restarts after a pause in the stream or a bad
-sample, skips all-zero reports and ignores offsets above gyro_cal's 0.2
-rad/s limit.
+sample, and skips all-zero reports.
 
 New config.imu.gyro_auto_calibration option, off by default.
 
@@ -87,7 +86,7 @@ index 0734cf8..b3608fb 100644
  #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 diff --git a/src/drivers/gyro_bias.rs b/src/drivers/gyro_bias.rs
 new file mode 100644
-index 0000000..68eb0f7
+index 0000000..a2a34c6
 --- /dev/null
 +++ b/src/drivers/gyro_bias.rs
 @@ -0,0 +1,442 @@
@@ -139,9 +138,6 @@ index 0000000..68eb0f7
 +const INITIAL_GYRO_DELTA: f64 = 1.0;
 +const INITIAL_ACCEL_DELTA: f64 = 0.25;
 +
-+/// Larger offsets are motion, not bias; the SSC's own gyro_cal uses the same
-+/// 0.2 rad/s limit.
-+const MAX_BIAS_DEG_S: f64 = 11.459;
 +/// Without a fresh accelerometer sample stillness can't be judged.
 +const MAX_ACCEL_AGE_SECS: f64 = 0.1;
 +const STANDARD_GRAVITY: f64 = 9.80665;
@@ -311,10 +307,6 @@ index 0000000..68eb0f7
 +
 +    fn correct(&mut self, dt: f64) {
 +        let mean = self.window.mean_gyro;
-+        if mean.iter().any(|value| value.abs() > MAX_BIAS_DEG_S) {
-+            return;
-+        }
-+
 +        self.steady_secs = (self.steady_secs + dt).min(EASE_IN_SECS);
 +        let ease_in = self.steady_secs / EASE_IN_SECS;
 +        let half_time = HALF_TIME_SECS * self.confidence;
@@ -467,10 +459,17 @@ index 0000000..68eb0f7
 +    }
 +
 +    #[test]
-+    fn rejects_offsets_beyond_the_bound() {
++    fn learns_an_offset_above_0_2_rad_s() {
++        let offset = [0.25, 0.22, 0.02];
 +        let mut bias = GyroBias::default();
-+        feed(&mut bias, 10.0, 0.0005, |_| [0.0, 0.25, 0.0], |_| GRAVITY);
-+        assert_eq!(bias.bias, [0.0; 3]);
++        feed(&mut bias, 10.0, 0.00002, |_| offset, |_| GRAVITY);
++        for axis in 0..3 {
++            assert!(
++                (bias_rad(&bias)[axis] - offset[axis]).abs() < 1e-4,
++                "{:?}",
++                bias.bias
++            );
++        }
 +    }
 +
 +    #[test]
