@@ -59,6 +59,8 @@ export const ptPT = {
   "settings.swipeGestures": "Gestos de deslizar",
   "settings.swipeGesturesDescription": "Deslize a partir das margens do ecrã para abrir os menus do Steam.",
   "settings.swipeGesturesError": "Não foi possível alterar os gestos de deslizar",
+  "settings.enableGyro": "Enable Gyro",
+  "settings.gyroError": "Could not change gyro",
   "settings.enableSsh": "Ativar SSH",
   "settings.lowPowerDownloads": "Download While Asleep",
   "settings.lowPowerDownloadsDescription": "Pressing power during a download offers to finish it with the screen off, then sleeps.",

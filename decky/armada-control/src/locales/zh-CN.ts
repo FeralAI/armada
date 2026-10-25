@@ -59,6 +59,8 @@ export const zhCN = {
   "settings.swipeGestures": "滑动手势",
   "settings.swipeGesturesDescription": "从屏幕边缘滑动以打开 Steam 菜单。",
   "settings.swipeGesturesError": "无法更改滑动手势",
+  "settings.enableGyro": "Enable Gyro",
+  "settings.gyroError": "Could not change gyro",
   "settings.enableSsh": "启用 SSH",
   "settings.lowPowerDownloads": "熄屏下载",
   "settings.lowPowerDownloadsDescription": "下载时按下电源键，可选择熄屏继续下载，完成后自动休眠。",

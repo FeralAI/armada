@@ -50,6 +50,12 @@ FROM ${KERNEL_REF} AS kernel
 ARG INPUTPLUMBER_REF
 FROM ${INPUTPLUMBER_REF} AS inputplumber
 
+ARG LIBSSC_REF
+FROM ${LIBSSC_REF} AS libssc
+
+ARG HEXAGONRPC_REF
+FROM ${HEXAGONRPC_REF} AS hexagonrpc
+
 ARG STEAMOS_MANAGER_REF
 FROM ${STEAMOS_MANAGER_REF} AS steamos-manager
 
@@ -92,6 +98,9 @@ FROM ${OPENABL_UPDATER_REF} AS openabl-updater
 ARG ARMADA_RGB_REF
 FROM ${ARMADA_RGB_REF} AS armada-rgb
 
+ARG ARMADA_SSC_REF
+FROM ${ARMADA_SSC_REF} AS armada-ssc
+
 ARG UMTP_RESPONDER_REF
 FROM ${UMTP_RESPONDER_REF} AS umtp-responder
 
@@ -132,6 +141,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=protontricks,source=/rpms,target=/packages/protontricks \
     --mount=type=bind,from=kernel,source=/kernel,target=/packages/kernel \
     --mount=type=bind,from=inputplumber,source=/rpms,target=/packages/inputplumber \
+    --mount=type=bind,from=libssc,source=/rpms,target=/packages/libssc \
+    --mount=type=bind,from=hexagonrpc,source=/rpms,target=/packages/hexagonrpc \
     --mount=type=bind,from=steamos-manager,source=/rpms,target=/packages/steamos-manager \
     --mount=type=bind,from=networkmanager,source=/rpms,target=/packages/networkmanager \
     --mount=type=bind,from=wpa_supplicant,source=/rpms,target=/packages/wpa_supplicant \
@@ -144,6 +155,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=armada-splash,source=/rpms,target=/packages/armada-splash \
     --mount=type=bind,from=armada-logos,source=/rpms,target=/packages/armada-logos \
     --mount=type=bind,from=armada-rgb,source=/rpms,target=/packages/armada-rgb \
+    --mount=type=bind,from=armada-ssc,source=/rpms,target=/packages/armada-ssc \
     --mount=type=bind,from=openabl-updater,source=/rpms,target=/packages/openabl-updater \
     --mount=type=bind,from=umtp-responder,source=/rpms,target=/packages/umtp-responder \
     --mount=type=bind,from=decky-build,source=/build/armada-control/dist,target=/packages/decky-dist \
