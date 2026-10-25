@@ -1,4 +1,4 @@
-From 73f5839e320ebe39b5b196e3080dca31194324ab Mon Sep 17 00:00:00 2001
+From 14c71f4b86314f61ef056f1c280347b84c9bd9bf Mon Sep 17 00:00:00 2001
 From: Radical <radical@radical.fun>
 Date: Wed, 23 Sep 2026 12:25:01 +0200
 Subject: [PATCH] wifi: Always write wpa_supplicant as the backend
@@ -6,19 +6,19 @@ Subject: [PATCH] wifi: Always write wpa_supplicant as the backend
 Steam asks for iwd on every launch and nothing in the config can refuse it,
 and iwd is not a backend Armada supports or tests.
 ---
- steamos-manager/src/wifi.rs | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+ steamos-manager/src/wifi.rs | 31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
 
 diff --git a/steamos-manager/src/wifi.rs b/steamos-manager/src/wifi.rs
-index 1b7dce1..e98918c 100644
+index 5bf8099..35f9a97 100644
 --- a/steamos-manager/src/wifi.rs
 +++ b/steamos-manager/src/wifi.rs
-@@ -379,9 +379,14 @@ pub(crate) async fn get_wifi_backend() -> Result<WifiBackend> {
+@@ -376,9 +376,14 @@ pub(crate) async fn get_wifi_backend() -> Result<WifiBackend> {
      Ok(get_nm_settings().await?.backend)
  }
  
--pub(crate) async fn set_wifi_backend(backend: WifiBackend, connection: &Connection) -> Result<()> {
-+pub(crate) async fn set_wifi_backend(_backend: WifiBackend, connection: &Connection) -> Result<()> {
+-pub(crate) async fn set_wifi_backend(backend: WifiBackend) -> Result<()> {
++pub(crate) async fn set_wifi_backend(_backend: WifiBackend) -> Result<()> {
 +    // Steam asks for iwd on every launch and nothing in the config can refuse it, so
 +    // pin the backend. Returning early keeps that from bouncing NetworkManager.
      let mut settings = get_nm_settings().await?;
@@ -27,24 +27,25 @@ index 1b7dce1..e98918c 100644
 +        return Ok(());
 +    }
 +    settings.backend = WifiBackend::WPASupplicant;
-     set_nm_settings(settings, true, connection).await
+     set_nm_settings(settings, true).await
  }
  
-@@ -624,6 +629,27 @@ mod test {
+@@ -621,6 +626,28 @@ mod test {
          );
      }
  
 +    #[tokio::test]
 +    async fn test_set_wifi_backend_pins_wpa_supplicant() {
 +        let mut h = testing::start();
-+        let connection = h.new_dbus().await.expect("dbus");
++        let _connection = h.new_dbus().await.expect("dbus");
++        h.populate_connections(Connections::System).await.unwrap();
 +
 +        create_dir_all(path(WIFI_BACKEND_PATHS.last().unwrap()))
 +            .await
 +            .expect("create_dir_all");
 +
 +        // No systemd mocks are registered, so a NetworkManager restart would fail the test.
-+        set_wifi_backend(WifiBackend::Iwd, &connection)
++        set_wifi_backend(WifiBackend::Iwd)
 +            .await
 +            .expect("set_wifi_backend");
 +

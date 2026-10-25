@@ -1,4 +1,4 @@
-From 8481cbd8596e584077a05e2340a0bb52b64d5624 Mon Sep 17 00:00:00 2001
+From d22ab3c9672335bf606d6c10d77cdbfd16d69e33 Mon Sep 17 00:00:00 2001
 From: Radical <radical@radical.fun>
 Date: Sat, 24 Oct 2026 23:08:07 +0200
 Subject: [PATCH] Allow LowPowerMode1 to be served by a remote interface
@@ -23,19 +23,19 @@ index fcf94bb..28e27c2 100644
  - Storage1
  - TdpLimit1
 diff --git a/steamos-manager/src/manager/user.rs b/steamos-manager/src/manager/user.rs
-index d703d62..dbdd624 100644
+index 6515963..ba71bcd 100644
 --- a/steamos-manager/src/manager/user.rs
 +++ b/steamos-manager/src/manager/user.rs
 @@ -27,7 +27,7 @@ use zbus::message::Header;
  use zbus::names::{BusName, OwnedBusName, UniqueName};
  use zbus::object_server::{Interface, SignalEmitter};
  use zbus::proxy::{Builder, CacheProperties, PropertyStream};
--use zbus::zvariant::{Fd, OwnedObjectPath};
-+use zbus::zvariant::OwnedObjectPath;
- use zbus::{Connection, ObjectServer, Proxy, zvariant};
+-use zbus::{Connection, Fd, ObjectServer, OwnedObjectPath, Proxy, Variant};
++use zbus::{Connection, ObjectServer, OwnedFd, OwnedObjectPath, Proxy, Variant};
  
  use steamos_manager_macros::{RemoteManager, interface, remote};
-@@ -56,8 +56,8 @@ use crate::power::{
+ 
+@@ -55,8 +55,8 @@ use crate::power::{
  };
  use crate::proxy::{
      BatteryChargeLimit1Proxy, CpuBoost1Proxy, CpuScaling1Proxy, FactoryReset1Proxy,
@@ -46,7 +46,7 @@ index d703d62..dbdd624 100644
  };
  use crate::screenreader::{OrcaManager, ScreenReaderAction, ScreenReaderMode};
  use crate::session::{
-@@ -225,6 +225,8 @@ struct RemoteInterface1 {
+@@ -228,6 +228,8 @@ struct RemoteInterface1 {
      #[remote]
      remote_gpu_power_profile1: Option<GpuPowerProfile1RemoteOwner>,
      #[remote]
@@ -55,7 +55,7 @@ index d703d62..dbdd624 100644
      remote_performance_profile1: Option<PerformanceProfile1RemoteOwner>,
      #[remote]
      remote_storage1: Option<Storage1RemoteOwner>,
-@@ -792,9 +794,9 @@ impl HdmiCec2 {
+@@ -808,9 +810,9 @@ impl HdmiCec2 {
      }
  }
  
@@ -63,11 +63,11 @@ index d703d62..dbdd624 100644
 +#[remote(name = "com.steampowered.SteamOSManager1.LowPowerMode1")]
  impl LowPowerMode1 {
 -    async fn enter_download_mode(&self, identifier: &str) -> fdo::Result<Fd<'_>> {
-+    async fn enter_download_mode(&self, identifier: &str) -> fdo::Result<zvariant::OwnedFd> {
++    async fn enter_download_mode(&self, identifier: &str) -> fdo::Result<OwnedFd> {
          let (tx, rx) = oneshot::channel();
          self.manager
              .send(TdpManagerCommand::EnterDownloadMode(
-@@ -934,6 +936,7 @@ impl RemoteInterface1 {
+@@ -951,6 +953,7 @@ impl RemoteInterface1 {
              remote_fan_control1: None,
              remote_gpu_performance_level1: None,
              remote_gpu_power_profile1: None,
