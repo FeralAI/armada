@@ -4,7 +4,7 @@
 #
 # Contract every build.sh sees, here and under ./build-local.sh:
 #   /work  the package directory, cwd. Artifacts land in ./out
-#   /src   the packages root: toolchain.env, TERRA.env, sibling packages
+#   /src   the packages root: toolchain.env, sibling packages
 
 ARG BUILDER_IMAGE
 ARG GUEST_BUILDER_IMAGE
@@ -54,7 +54,6 @@ FROM scratch AS out-armada-logos
 COPY --from=pkg-armada-logos /work/out/ /rpms/
 
 FROM builder-base AS pkg-gamescope
-COPY TERRA.env /src/
 COPY gamescope/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
@@ -64,7 +63,7 @@ COPY --from=pkg-gamescope /work/out/ /rpms/
 
 
 FROM builder-base AS pkg-gamescope-session
-COPY TERRA.env /src/
+COPY gamescope/TERRA.env /src/gamescope/
 COPY gamescope-session/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
@@ -74,7 +73,7 @@ COPY --from=pkg-gamescope-session /work/out/ /rpms/
 
 
 FROM builder-base AS pkg-gamescope-session-steam
-COPY TERRA.env /src/
+COPY gamescope/TERRA.env /src/gamescope/
 COPY gamescope-session-steam/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
@@ -147,7 +146,6 @@ COPY --from=pkg-wpa_supplicant /work/out/ /rpms/
 
 
 FROM builder-base AS pkg-scx-scheds
-COPY TERRA.env /src/
 COPY scx-scheds/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
