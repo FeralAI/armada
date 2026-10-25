@@ -18,14 +18,9 @@ Source0:        %{forgeurl}/archive/%{commit}/%{name}-%{commit}.tar.gz
 Patch1:         0001-fix-gamepad-share-raw-input.patch
 Patch2:         0002-fix-force-feedback-reset-effects-when-replacing-targets.patch
 Patch4:         0004-fix-Hardware-Support-KONKR-Pocket-FIT-MCU-system-buttons.patch
-Patch5:         0005-feat-Hardware-Support-Qualcomm-SSC-sensors.patch
-Patch7:         0007-add-fastrpc-config-to-devices.patch
-Patch8:         0008-feat-Manager-opt-in-to-FastRPC-devices.patch
-Patch9:         0009-fix-ssc-pass-gyro-rad-s-through.patch
-Patch10:        0010-fix-ssc-drain-glib-main-context.patch
-Patch11:        0011-fix-ssc-keep-retrying-until-the-SSC-answers.patch
-Patch12:        0012-fix-ssc-load-libssc-by-its-versioned-soname.patch
-Patch13:        0013-feat-ssc-open-the-sensors-at-200-Hz.patch
+Patch5:         0005-feat-ssc-qualcomm-sensor-core-support.patch
+Patch6:         0006-feat-ssc-gyro-auto-calibration.patch
+Patch7:         0007-feat-ssc-device-enablement.patch
 
 BuildRequires:  cargo
 BuildRequires:  rust
@@ -75,7 +70,7 @@ make install PREFIX=%{buildroot}%{_prefix}
 %systemd_postun_with_restart inputplumber.service
 
 %files
-%license LICENSE
+%license LICENSE LICENSE-GamepadMotionHelpers
 %doc README.md
 %{_bindir}/inputplumber
 %{_datadir}/dbus-1/system.d/%{dbusname}.conf

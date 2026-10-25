@@ -10,20 +10,10 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: armada
 - `patches/0004-fix-Hardware-Support-KONKR-Pocket-FIT-MCU-system-buttons.patch`
   source: armada
-- `patches/0005-feat-Hardware-Support-Qualcomm-SSC-sensors.patch`
+- `patches/0005-feat-ssc-qualcomm-sensor-core-support.patch`
   source: https://github.com/ShadowBlip/InputPlumber/pull/590/commits/3caa7902d92e49b86fed567df61a0677304ae8bf
-  notes: Rebased on latest InputPlumber; adds the FastRPCDevice.Id polkit action the upstream policy test requires.
-- `patches/0007-add-fastrpc-config-to-devices.patch`
+  notes: Adds the FastRPCDevice.Id polkit action and the INPUTPLUMBER_FASTRPC opt-in, fixes scaling, polling, opening, library loading and sample rate, and moves the driver to the 0.83 pattern.
+- `patches/0006-feat-ssc-gyro-auto-calibration.patch`
   source: armada
-- `patches/0008-feat-Manager-opt-in-to-FastRPC-devices.patch`
-  source: armada
-- `patches/0009-fix-ssc-pass-gyro-rad-s-through.patch`
-  source: armada
-- `patches/0010-fix-ssc-drain-glib-main-context.patch`
-  source: armada
-- `patches/0011-fix-ssc-keep-retrying-until-the-SSC-answers.patch`
-  source: armada
-- `patches/0012-fix-ssc-load-libssc-by-its-versioned-soname.patch`
-  source: armada
-- `patches/0013-feat-ssc-open-the-sensors-at-200-Hz.patch`
+- `patches/0007-feat-ssc-device-enablement.patch`
   source: armada
