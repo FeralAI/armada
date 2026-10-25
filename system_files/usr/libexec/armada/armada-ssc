@@ -9,18 +9,21 @@ ARMADA_GYRO=$(sed -n 's/^ARMADA_GYRO=//p' /etc/armada/gyro.conf 2>/dev/null | he
 ARMADA_GYRO=${ARMADA_GYRO:-1}
 
 root="/usr/share/armada/ssc/${ARMADA_DEVICE_ID:-}"
-enabled=0
-if [ -n "${ARMADA_DEVICE_ID:-}" ] && [ -d "$root" ] && [ "$ARMADA_GYRO" = 1 ]; then
-    enabled=1
+supported=0
+if [ -n "${ARMADA_DEVICE_ID:-}" ] && [ -d "$root" ]; then
+    supported=1
 fi
 
 if [ "${1:-}" = env ]; then
+    enabled=0
+    [ "$supported" = 1 ] && [ "$ARMADA_GYRO" = 1 ] && enabled=1
     mkdir -p /run/armada
     echo "INPUTPLUMBER_FASTRPC=$enabled" > /run/armada/gyro.env
     exit 0
 fi
 
-[ "$enabled" = 1 ] || exit 0
+# Even with gyro off: the sensors PD only comes up if this attaches soon after the ADSP boots.
+[ "$supported" = 1 ] || exit 0
 
 # The ADSP has one FastRPC node; the device tree decides whether it is secure.
 for _ in $(seq 60); do

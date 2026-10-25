@@ -59,6 +59,8 @@ export const ptBR = {
   "settings.swipeGestures": "Gestos de deslizar",
   "settings.swipeGesturesDescription": "Deslize a partir das bordas da tela para abrir os menus do Steam.",
   "settings.swipeGesturesError": "Não foi possível alterar os gestos de deslizar",
+  "settings.enableGyro": "Enable Gyro",
+  "settings.gyroError": "Could not change gyro",
   "settings.enableSsh": "Habilitar SSH",
   "settings.osVersion": "Versão do SO",
   "settings.ablVersion": "Versão do ABL",

@@ -12,6 +12,7 @@ import {
   setControllerType as applyControllerType,
   setMtpEnabled as applyMtpEnabled,
   setDesktopMode as applyDesktopMode,
+  setGyroEnabled as applyGyroEnabled,
   setSleepMode as applySleepMode,
   setSleepLogsEnabled as applySleepLogsEnabled,
   setSshEnabled as applySshEnabled,
@@ -33,6 +34,7 @@ export function Settings({ config, setConfig }: {
   setConfig: Dispatch<SetStateAction<Config | null>>;
 }) {
   const [swipeGesturesSaving, setSwipeGesturesSaving] = useState(false);
+  const [gyroSaving, setGyroSaving] = useState(false);
   const [sleepLogsEnabled, setSleepLogsEnabled] = useState<boolean | null>(null);
   const [sleepLogsSaving, setSleepLogsSaving] = useState(false);
   const setBottomScreenBrightness = useDebouncedApply(
@@ -127,6 +129,18 @@ export function Settings({ config, setConfig }: {
       setSwipeGesturesSaving(false);
     }
   };
+  const setGyroEnabled = async (enabled: boolean) => {
+    if (gyroSaving) return;
+    setGyroSaving(true);
+    try {
+      const applied = await applyGyroEnabled(enabled);
+      setConfig((current) => (current ? { ...current, gyro: { ...current.gyro, enabled: applied } } : current));
+    } catch (error) {
+      toaster.toast({ title: t("settings.gyroError"), body: String(error) });
+    } finally {
+      setGyroSaving(false);
+    }
+  };
   const setBottomScreenEnabled = async (enabled: boolean) => {
     if (enabled === !!config.bottomScreenEnabled) {
       return;
@@ -185,6 +199,14 @@ export function Settings({ config, setConfig }: {
           onChange={setControllerType}
         />
         <ButtonRow layout="below" onClick={openCalibration}>{t("calibration.launch")}</ButtonRow>
+        {config.gyro?.supported && (
+          <ToggleRow
+            label={t("settings.enableGyro")}
+            value={config.gyro.enabled}
+            disabled={gyroSaving}
+            onChange={setGyroEnabled}
+          />
+        )}
       </PanelSection>
       <PanelSection title={t("settings.system")}>
         <ToggleRow

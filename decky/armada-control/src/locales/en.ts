@@ -57,6 +57,8 @@ export const en = {
   "settings.swipeGestures": "Swipe Gestures",
   "settings.swipeGesturesDescription": "Swipe from the screen edges to open Steam menus.",
   "settings.swipeGesturesError": "Could not change swipe gestures",
+  "settings.enableGyro": "Enable Gyro",
+  "settings.gyroError": "Could not change gyro",
   "settings.enableSsh": "Enable SSH",
   "settings.osVersion": "OS Version",
   "settings.ablVersion": "ABL Version",

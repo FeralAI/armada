@@ -22,6 +22,7 @@ from armada_control.system import (
     get_sleep_logs_enabled,
     set_mtp_enabled,
     set_desktop_mode,
+    set_gyro_enabled,
     set_sleep_mode,
     set_sleep_logs_enabled,
     set_ssh_enabled,
@@ -62,6 +63,9 @@ class Plugin:
 
     async def set_ssh_enabled(self, enabled):
         return await asyncio.to_thread(set_ssh_enabled, enabled)
+
+    async def set_gyro_enabled(self, enabled):
+        return await asyncio.to_thread(set_gyro_enabled, enabled)
 
     async def set_mtp_enabled(self, enabled):
         return await asyncio.to_thread(set_mtp_enabled, enabled)

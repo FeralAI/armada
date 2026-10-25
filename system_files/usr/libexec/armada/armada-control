@@ -31,6 +31,8 @@ CLIENT_TIMEOUT = 5
 CONTROLLER_TYPES = {"deck-uhid", "xbox-series", "xb360", "ds5"}
 INTERCEPT_MODES = {"overlay", "reset"}
 SWIPE_GESTURES_CONFIG = Path("/etc/armada/swipe-gestures.conf")
+GYRO_CONFIG = Path("/etc/armada/gyro.conf")
+SSC_DATA = Path("/usr/share/armada/ssc")
 SLEEP_CONFIG = Path("/etc/armada/sleep.conf")
 SUSPEND_MODE_KEY = "suspend_mode"
 NM_IGNORE_SLEEP = Path("/etc/NetworkManager/ignore-sleep")
@@ -494,6 +496,47 @@ def action_get_device_env(request):
     return {"env": device_env()}
 
 
+def gyro_setting():
+    # Must agree with armada-ssc's parsing.
+    try:
+        lines = GYRO_CONFIG.read_bytes().decode("utf-8", "replace").split("\n")
+    except (OSError, UnicodeDecodeError):
+        return True
+    for line in lines:
+        if line.startswith("ARMADA_GYRO="):
+            return line[len("ARMADA_GYRO="):] in ("", "1")
+    return True
+
+
+def action_get_gyro(request):
+    device_id = device_env().get("ARMADA_DEVICE_ID", "")
+    supported = bool(device_id) and (SSC_DATA / device_id).is_dir()
+    return {"supported": supported, "enabled": supported and gyro_setting()}
+
+
+def action_set_gyro_enabled(request):
+    enabled = request.get("enabled")
+    if not isinstance(enabled, bool):
+        raise ValueError("invalid gyro enabled state")
+    if not action_get_gyro({})["supported"]:
+        raise RuntimeError("this device has no gyro support")
+    try:
+        previous = GYRO_CONFIG.read_bytes().decode("utf-8", "replace")
+    except FileNotFoundError:
+        previous = None
+    atomic_write(GYRO_CONFIG, f"ARMADA_GYRO={int(enabled)}\n")
+    # InputPlumber reads the opt-in when it starts.
+    try:
+        run(["/usr/bin/systemctl", "restart", "inputplumber"])
+    except Exception:
+        if previous is None:
+            GYRO_CONFIG.unlink(missing_ok=True)
+        else:
+            atomic_write(GYRO_CONFIG, previous)
+        raise
+    return action_get_gyro({})
+
+
 def action_get_bottom_screen_enabled(request):
     return {"enabled": bottom_screen_enabled()}
 
@@ -852,6 +895,8 @@ def action_restart_game_mode(request):
 ACTIONS = {
     "get_swipe_gestures_enabled": action_get_swipe_gestures_enabled,
     "set_swipe_gestures_enabled": action_set_swipe_gestures_enabled,
+    "get_gyro": action_get_gyro,
+    "set_gyro_enabled": action_set_gyro_enabled,
     "set_controller_type": action_set_controller_type,
     "get_controller_type": action_get_controller_type,
     "get_device_env": action_get_device_env,

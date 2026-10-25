@@ -59,6 +59,8 @@ export const zhCN = {
   "settings.swipeGestures": "滑动手势",
   "settings.swipeGesturesDescription": "从屏幕边缘滑动以打开 Steam 菜单。",
   "settings.swipeGesturesError": "无法更改滑动手势",
+  "settings.enableGyro": "Enable Gyro",
+  "settings.gyroError": "Could not change gyro",
   "settings.enableSsh": "启用 SSH",
   "settings.osVersion": "系统版本",
   "settings.ablVersion": "ABL 版本",
