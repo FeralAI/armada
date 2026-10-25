@@ -42,3 +42,6 @@ already upstream, and `468ae09` only adds a README troubleshooting section.
 - `patches/0013-power-Add-a-power_supply-battery-charge-limit-method.patch`
   source: armada
   notes: `acpi_sb` only searches the ACPI battery driver's paths, so `qcom_battmgr`'s `charge_control_end_threshold` was never found and `BatteryChargeLimit1` could not register on ARM. Adds `method = "power_supply"`, which searches `/sys/class/power_supply` (symlinked entries) with the same logic. Also writes 100 for Steam's reset (`-1`, sent as 0): an end threshold has no off value, and `qcom_battmgr` clamps 0 to 55.
+- `patches/0014-Allow-LowPowerMode1-to-be-served-by-a-remote-interfa.patch`
+  source: armada
+  notes: Steam's `CSleepController` only offers low-power downloads (screen off, finish the download, then sleep) when `LowPowerMode1` is on the bus. Upstream only registers it with a `tdp_limit.download_mode_limit`, which Qualcomm has no knob for, so `armada-powerd` serves it instead. The local `Fd<'_>` return becomes `OwnedFd` so the relay can pass the remote's handle straight through.
