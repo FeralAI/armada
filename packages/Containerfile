@@ -101,7 +101,6 @@ COPY --from=pkg-inputplumber /work/out/ /rpms/
 
 
 FROM builder-base AS pkg-libssc
-COPY TERRA.env /src/
 COPY libssc/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
@@ -111,7 +110,6 @@ COPY --from=pkg-libssc /work/out/ /rpms/
 
 
 FROM builder-base AS pkg-hexagonrpc
-COPY TERRA.env /src/
 COPY hexagonrpc/ /work/
 WORKDIR /work
 RUN ./build.sh && /src/scrub-scratch.sh
