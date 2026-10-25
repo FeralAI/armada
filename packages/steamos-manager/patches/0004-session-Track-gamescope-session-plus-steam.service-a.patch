@@ -1,4 +1,4 @@
-From 486685ede90adc298382e654cc3d7b28c5800ca4 Mon Sep 17 00:00:00 2001
+From 7e0cb9ed9252730697602b34e81c094eed3c80b0 Mon Sep 17 00:00:00 2001
 From: Radical <radical@radical.fun>
 Date: Sat, 17 Oct 2026 17:48:03 +0200
 Subject: [PATCH] session: Track gamescope-session-plus@steam.service as game
@@ -13,7 +13,7 @@ switch to Game, so Steam's screen reader calls go nowhere.
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/steamos-manager/src/session.rs b/steamos-manager/src/session.rs
-index 1754f46..87f592b 100644
+index 28e3918..864a05d 100644
 --- a/steamos-manager/src/session.rs
 +++ b/steamos-manager/src/session.rs
 @@ -40,6 +40,7 @@ const TEMPORARY_CONFIG_PATH_LEGACY: &str = "zzt-steamos-temp-login.conf";
@@ -24,7 +24,7 @@ index 1754f46..87f592b 100644
  
  #[cfg(not(test))]
  static CONFIG_PATHS: OnceCell<ConfigPaths> = OnceCell::const_new();
-@@ -274,7 +275,7 @@ impl SessionManager {
+@@ -272,7 +273,7 @@ impl SessionManager {
      }
  
      pub(crate) async fn current_login_mode(&self) -> Result<LoginMode> {
@@ -33,7 +33,7 @@ index 1754f46..87f592b 100644
              return Ok(LoginMode::Game);
          }
          Ok(LoginMode::Desktop)
-@@ -435,7 +436,7 @@ impl Service for SessionManagerService {
+@@ -433,7 +434,7 @@ impl Service for SessionManagerService {
      const NAME: &'static str = "session-manager";
  
      async fn run(&mut self) -> Result<()> {

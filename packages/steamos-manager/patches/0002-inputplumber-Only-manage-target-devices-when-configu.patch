@@ -1,4 +1,4 @@
-From 9901e6dd4f533b6f1fb986c9872610beb16e99ab Mon Sep 17 00:00:00 2001
+From e0c4653a12619973946ef7f9d10a9477d316ff30 Mon Sep 17 00:00:00 2001
 From: Radical <radical@radical.fun>
 Date: Mon, 21 Sep 2026 20:30:16 +0200
 Subject: [PATCH] inputplumber: Only manage target devices when configured to
@@ -10,10 +10,10 @@ device to deck-uhid, overriding whatever else owns target devices.
  1 file changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/steamos-manager/src/inputplumber.rs b/steamos-manager/src/inputplumber.rs
-index 0da1ea7..0a0a05b 100644
+index c34da8b..ff3c50c 100644
 --- a/steamos-manager/src/inputplumber.rs
 +++ b/steamos-manager/src/inputplumber.rs
-@@ -103,12 +103,13 @@ impl DeckService {
+@@ -102,12 +102,13 @@ impl DeckService {
              .await?;
          if !self.is_deck(&proxy).await? {
              let config = device_config().await?;
@@ -31,7 +31,7 @@ index 0da1ea7..0a0a05b 100644
              let new_targets: Vec<&str> = targets.iter().map(AsRef::as_ref).collect();
  
              debug!(
-@@ -127,6 +128,18 @@ impl Service for DeckService {
+@@ -126,6 +127,18 @@ impl Service for DeckService {
      const NAME: &'static str = "inputplumber";
  
      async fn run(&mut self) -> Result<()> {
