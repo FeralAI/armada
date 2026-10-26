@@ -1,50 +1,69 @@
-#!/usr/bin/python3
-"""Convert Steam's backlight write into the selected panel's raw range."""
+#!/usr/bin/awk -f
+# Convert Steam's light request into the selected panel's raw range.
 
-import math
-from pathlib import Path
-import sys
+function fail(message) {
+    print "steam-backlight-value: " message > "/dev/stderr"
+    exit 1
+}
 
+function number(value,    result) {
+    if (value !~ /^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$/)
+        fail("invalid numeric parameter")
+    result = value + 0
+    if (sprintf("%g", result) ~ /[IiNn]/)
+        fail("non-finite numeric parameter")
+    return result
+}
 
-def brightness_value(value, source_max, target_max, scale):
-    if source_max <= 0 or target_max <= 0 or not 0 <= value <= source_max:
-        raise ValueError("invalid backlight value or range")
-    if scale != "non-linear":
-        return value * target_max // source_max
+function read_max(directory,    path, value) {
+    path = directory "/max_brightness"
+    if ((getline value < path) != 1)
+        fail("cannot read " path)
+    close(path)
+    if (value !~ /^[0-9]+$/ || value + 0 <= 0)
+        fail("invalid backlight range")
+    return number(value)
+}
 
-    minimum = (target_max + 19) // 20  # 5% of the raw range, rounded up.
-    if value == 0:
-        return minimum
+BEGIN {
+    if (ARGC < 4 || ARGC > 7)
+        fail("expected value, source directory, target directory, optional gamma and minima")
+    if (ARGV[1] !~ /^[0-9]+$/)
+        fail("invalid backlight value")
+    value = number(ARGV[1])
+    source_max = read_max(ARGV[2])
+    target_max = read_max(ARGV[3])
+    gamma = ARGC >= 5 ? number(ARGV[4]) : 1
+    input_min = ARGC >= 6 ? number(ARGV[5]) : 0
+    output_min = ARGC >= 7 ? number(ARGV[6]) : 0
+    if (value > source_max || gamma <= 0 || input_min < 0 || input_min >= 1 ||
+        output_min < 0 || output_min > 1)
+        fail("invalid backlight value, gamma or minimum")
+    if (gamma == 1 && input_min == 0 && output_min == 0) {
+        print int(value * target_max / source_max)
+        exit
+    }
 
-    # Steam's display curve recheck this curve if Steam changes its backlight backend.
-    points = ((0.0, math.log2(0.01)), (0.5, -1.75), (0.9, -0.25), (1.0, 0.0))
-    light = math.log2(value / source_max)
-    position = 0.0
-    for (x0, y0), (x1, y1) in zip(points, points[1:]):
-        if light <= y1:
-            position = x0 + (light - y0) * (x1 - x0) / (y1 - y0)
-            break
-    position = max(0.0, min(1.0, position))
-    return minimum + int(position * (target_max - minimum) + 0.5)
+    # Steam truncates its light request before calling the helper.
+    source_min = int(input_min * source_max)
+    minimum = int(output_min * target_max)
+    if (minimum < output_min * target_max) minimum++
+    if (value <= source_min) {
+        print minimum
+        exit
+    }
+    if (value == source_max) {
+        print target_max
+        exit
+    }
 
-
-def main(args):
-    if len(args) != 3:
-        raise ValueError("expected value, source directory, target directory")
-    value, source, target = args
-    source, target = Path(source), Path(target)
-    try:
-        scale = (target / "scale").read_text().strip()
-    except FileNotFoundError:
-        scale = "unknown"
-    print(brightness_value(int(value), int((source / "max_brightness").read_text()),
-                           int((target / "max_brightness").read_text()),
-                           scale))
-
-
-if __name__ == "__main__":
-    try:
-        main(sys.argv[1:])
-    except (OSError, ValueError) as error:
-        print(f"steam-backlight-value: {error}", file=sys.stderr)
-        sys.exit(1)
+    # Anchor the gamma-corrected light range at the configured raw minimum.
+    lower = (source_min / source_max) ^ (1 / gamma)
+    if (lower >= 1)
+        fail("backlight gamma leaves no usable range")
+    setting = (value / source_max) ^ (1 / gamma)
+    position = (setting - lower) / (1 - lower)
+    result = minimum + int(position * (target_max - minimum) + 0.5)
+    print (result > target_max ? target_max : result)
+    exit
+}
