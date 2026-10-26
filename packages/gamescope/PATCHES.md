@@ -62,3 +62,5 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: armada
 - `patches/0031-drm-wait-for-the-lock-state-before-lighting-the-companion.patch`
   source: armada
+- `patches/0032-steamcompmgr-use-the-exact-rate-for-refresh-only-requests.patch`
+  source: armada
