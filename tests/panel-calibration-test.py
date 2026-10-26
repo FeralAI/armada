@@ -64,7 +64,7 @@ class ModeTest(unittest.TestCase):
         (self.ctrl / "frame_len_120").write_text("156\n")
         self.saved = {name: getattr(calibration, name)
                       for name in ("CONFIG", "DEFAULTS", "controls", "calibrate", "current_rate")}
-        calibration.current_rate = lambda ctrl: 120.63
+        calibration.current_rate = lambda: 120.63
         calibration.CONFIG = str(root / "panel.conf")
         calibration.DEFAULTS = str(root / "defaults.json")
         calibration.controls = lambda: [str(self.ctrl)]
@@ -95,7 +95,7 @@ class ModeTest(unittest.TestCase):
 
     def test_step_moves_past_the_default_in_both_directions(self):
         # The Portal starts fast (120.6 Hz at 156) and calibrates slower.
-        calibration.current_rate = lambda ctrl: 120.05
+        calibration.current_rate = lambda: 120.05
         self.assertEqual(calibration.main(["x"]), 0)
         self.assertEqual(self.status("step", "frame_len_120", "slower")["value"], 157)
         self.assertEqual(self.status("step", "frame_len_120", "faster")["value"], 156)
@@ -103,7 +103,7 @@ class ModeTest(unittest.TestCase):
         self.assertEqual((self.ctrl / "frame_len_120").read_text(), "155\n")
 
     def test_step_faster_has_no_ceiling(self):
-        calibration.current_rate = lambda ctrl: 120.15
+        calibration.current_rate = lambda: 120.15
         self.assertEqual(self.status("step", "frame_len_120", "faster"), {"value": 155, "hz": 120.15, "limit": None})
         self.assertEqual((self.ctrl / "frame_len_120").read_text(), "155\n")
 
@@ -191,18 +191,6 @@ class ConvergeTest(unittest.TestCase):
 
     def test_backs_off_an_estimate_below_the_floor(self):
         self.assertEqual(self.run_converge(41), (44, 120.02))
-
-
-class ConnectorTest(unittest.TestCase):
-    def test_panels_are_numbered_in_host_order(self):
-        saved = calibration.glob.glob
-        try:
-            calibration.glob.glob = lambda pattern: ["/d/ae96000.dsi.0", "/d/ae94000.dsi.0"]
-            self.assertEqual(calibration.connector_name("/d/ae96000.dsi.0"), "DSI-2")
-            calibration.glob.glob = lambda pattern: ["/d/ae96000.dsi.0"]
-            self.assertEqual(calibration.connector_name("/d/ae96000.dsi.0"), "DSI-1")
-        finally:
-            calibration.glob.glob = saved
 
 
 if __name__ == "__main__":

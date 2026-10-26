@@ -15,14 +15,15 @@ import fcntl
 import glob
 import json
 import os
+import shlex
 import struct
+import subprocess
 import sys
 import time
 
 CONFIG = "/etc/armada/panel.conf"
 DEFAULTS = "/run/armada/panel-defaults.json"
 ATTRS = ("frame_len_120", "frame_len_60")
-CARD = "/dev/dri/card0"
 DRM_IOCTL_WAIT_VBLANK = 0xC018643A
 DRM_IOCTL_MODE_GETRESOURCES = 0xC04064A0
 DRM_IOCTL_MODE_GETENCODER = 0xC01464A6
@@ -78,20 +79,30 @@ def write_config(values):
     os.replace(tmp, CONFIG)
 
 
-def connector_name(ctrl):
-    """msm numbers DSI connectors in DSI host order, so the Nth panel by host
-    address is DSI-N."""
-    hosts = sorted(os.path.basename(c) for c in glob.glob("/sys/bus/mipi-dsi/devices/*"))
-    return f"DSI-{hosts.index(os.path.basename(ctrl)) + 1}"
+def primary_connector():
+    out = subprocess.run(["/usr/libexec/armada/device-env"], capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        key, _, value = line.partition("=")
+        if key == "ARMADA_PRIMARY_CONNECTOR" and value:
+            return shlex.split(value)[0]
+    raise OSError("no primary connector")
 
 
-def panel_pipe(fd, ctrl):
+def open_card():
+    """msm is not always card0."""
+    for path in glob.glob(f"/sys/class/drm/card*-{primary_connector()}"):
+        try:
+            with open(os.path.join(path, "connector_id")) as f:
+                connector_id = int(f.read())
+        except (OSError, ValueError):
+            continue
+        card = os.path.basename(path).split("-")[0]
+        return os.open(f"/dev/dri/{card}", os.O_RDWR), connector_id
+    raise OSError("no panel connector")
+
+
+def panel_pipe(fd, connector_id):
     """The CRTC index driving the panel, or None when it is off."""
-    try:
-        with open(glob.glob(f"/sys/class/drm/card*-{connector_name(ctrl)}/connector_id")[0]) as f:
-            connector_id = int(f.read())
-    except (OSError, IndexError, ValueError):
-        return None
     # One mode slot: with no slots the kernel would reprobe the connector.
     modes = bytearray(MODEINFO_SIZE)
     buf = bytearray(struct.pack("QQQQ12I", 0, address(modes), 0, 0, 1, 0, 0, 0,
@@ -221,9 +232,12 @@ def converge(fd, ctrl, attr, pipe, value, faster, target, ceiling, nominal):
 
 def calibrate(ctrl):
     """(value, rate) when calibrated, otherwise why not."""
-    fd = os.open(CARD, os.O_RDWR)
     try:
-        return calibrate_pipe(fd, ctrl)
+        fd, connector_id = open_card()
+    except OSError:
+        return "The display is off."
+    try:
+        return calibrate_pipe(fd, ctrl, connector_id)
     except OSError:
         # A pipe went away mid-run (DPMS or a modeset); the probe was restored.
         return "The display went off during calibration."
@@ -231,8 +245,8 @@ def calibrate(ctrl):
         os.close(fd)
 
 
-def calibrate_pipe(fd, ctrl):
-    pipe = panel_pipe(fd, ctrl)
+def calibrate_pipe(fd, ctrl, connector_id):
+    pipe = panel_pipe(fd, connector_id)
     if pipe is None:
         return "The display is off."
     first = measure(fd, pipe)
@@ -270,13 +284,13 @@ def mode_of(rate):
     return None, None
 
 
-def current_rate(ctrl):
+def current_rate():
     try:
-        fd = os.open(CARD, os.O_RDWR)
+        fd, connector_id = open_card()
     except OSError:
         return None
     try:
-        pipe = panel_pipe(fd, ctrl)
+        pipe = panel_pipe(fd, connector_id)
         return None if pipe is None else measure(fd, pipe)
     except OSError:
         return None
@@ -284,8 +298,8 @@ def current_rate(ctrl):
         os.close(fd)
 
 
-def report_rate(ctrl):
-    hz = current_rate(ctrl)
+def report_rate():
+    hz = current_rate()
     print(json.dumps({"hz": round(hz, 2) if hz else None, "attr": mode_of(hz)[0] if hz else None}))
 
 
@@ -342,7 +356,7 @@ def step(ctrl, attr, direction):
         write_attr(ctrl, attr, new)
     except OSError:
         new, limit = value, "range"
-    hz = current_rate(ctrl)
+    hz = current_rate()
     print(json.dumps({"value": new, "hz": round(hz, 2) if hz else None, "limit": limit}))
 
 
@@ -392,7 +406,7 @@ def main(argv):
     if mode == "status":
         status(ctrl, values)
     elif mode == "rate":
-        report_rate(ctrl)
+        report_rate()
     elif mode == "apply":
         apply(ctrl, values)
     elif mode == "step":
