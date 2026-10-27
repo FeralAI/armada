@@ -985,6 +985,125 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   upstream: https://git.kernel.org/torvalds/c/c53d30b2814e0f0215cdafe9ccf691eace2949ff
   notes: Include context refreshed for Linux 7.2.6; GPU thermal trips and cooling maps unchanged.
 
+- `patches/1114-remoteproc-qcom-add-eliza-wpss.patch`
+  source: Armada; existing Linux Milos/SC7280 WPSS support and Qualcomm Kera downstream sources, checked against the Duo Android FDT.
+  upstream: No.
+  notes: Reuses the PAS driver with auto_boot=false. Adds the WPSS firmware processor support used by the WCN7750 ath12k backport.
+
+- `patches/1139-soc-qcom-smp2p-reset-input-state-only-on-restart.patch`
+  source: Armada; Duo SMP2P wake/release trace and Linux qcom_smp2p_check_ssr() regression reproducer.
+  upstream: No.
+
+- `patches/1140-wifi-ath12k-move-MSI-state-from-ath12k-pci-to-ath12k-base.patch`
+  source: https://github.com/RetroidPocket/linux/commit/be7f234a62cd0a47ce043fa9329faaef509eb030
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support. Move the existing WCN7860 MSI reference as well.
+
+- `patches/1141-wifi-ath12k-share-the-register-window-geometry-with-the-core.patch`
+  source: https://github.com/RetroidPocket/linux/commit/d1ef16ccc3d1c67d590986e51f15d3cbb5797942
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1142-wifi-ath12k-let-the-MSI-CE-DP-IRQ-setup-serve-platform-devices.patch`
+  source: https://github.com/RetroidPocket/linux/commit/f2c4631acf1e6a497cee3610d1bcddbe13d1a75c
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1143-wifi-ath12k-allow-receive-only-services-in-map-service-to-pipe.patch`
+  source: https://github.com/RetroidPocket/linux/commit/7dae8198ef2133b30fadc1f2ac312031dab3d2ee
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1144-wifi-ath12k-keep-the-CE-interrupt-mask-balanced-across-restarts.patch`
+  source: https://github.com/RetroidPocket/linux/commit/ca800f8cd0e2b19ffca0df6a5fdbeea312ddb479
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1145-wifi-ath12k-add-an-optional-cfg-static-window-hif-op.patch`
+  source: https://github.com/RetroidPocket/linux/commit/bdbf8cc0bb5a31a32251f9cdc8718fba2c500373
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1146-wifi-ath12k-take-the-shadow-register-base-from-hw-params.patch`
+  source: https://github.com/RetroidPocket/linux/commit/7d9b6f2688952f71b4125cdb2974054330823609
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1147-wifi-ath12k-support-targets-with-fixed-firmware-memory.patch`
+  source: https://github.com/RetroidPocket/linux/commit/444bb9b352908ce84ab7425a1e747772bc7ec6da
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1148-wifi-ath12k-cap-the-shadow-register-configuration-at-38-entries.patch`
+  source: https://github.com/RetroidPocket/linux/commit/364880382bfaa6ed1c96522dd9070dfd8ebc6d94
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1149-wifi-ath12k-add-the-QMI-device-info-request.patch`
+  source: https://github.com/RetroidPocket/linux/commit/c8d5b4abbc9af8fa3e1d4fc8fd530bb3f6353677
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1150-wifi-ath12k-send-ddr-range-and-gpio-info-in-host-cap.patch`
+  source: https://github.com/RetroidPocket/linux/commit/814e706988b98ca39714133980021b39ae3f7403
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support. Use the 7.2 host-capability layout without dynamic_mem.
+
+- `patches/1151-wifi-ath12k-support-cold-boot-calibration.patch`
+  source: https://github.com/RetroidPocket/linux/commit/2f10dd06904a0af0897bdaa00dcb2e17cffe6b0d
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support. Use 7.2 QMI constants and reuse Armada 0040 for QDSS download.
+
+- `patches/1152-wifi-ath12k-track-the-firmware-generation-across-recovery.patch`
+  source: https://github.com/RetroidPocket/linux/commit/f23d44355701c909ab63a3253644af114eb0427c
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1153-wifi-ath12k-add-ath12k-core-firmware-crashed.patch`
+  source: https://github.com/RetroidPocket/linux/commit/ef330ed2a7cdbd5ae20ee89ec26f62dda1623822
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1154-wifi-ath12k-stop-touching-srngs-after-the-HAL-is-torn-down.patch`
+  source: https://github.com/RetroidPocket/linux/commit/5c301a42fc1d833eca66ed8dc5d58a650b3bd66c
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1155-wifi-ath12k-tolerate-a-missing-hwmon-device-on-thermal-cleanup.patch`
+  source: https://github.com/RetroidPocket/linux/commit/ecda60ed15f6d05dc2648bf28eb50e0bef800f73
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1156-wifi-ath12k-guard-the-link-peer-table-against-concurrent-teardown.patch`
+  source: https://github.com/RetroidPocket/linux/commit/1877d7230554c26f9558b215d0349253df378f5e
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1157-wifi-ath12k-add-the-WCN7750-copy-engine-configuration.patch`
+  source: https://github.com/RetroidPocket/linux/commit/c560f20177338be2a376b24e927574e1e0e207f2
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support.
+
+- `patches/1158-wifi-ath12k-add-WCN7750-hw1-0.patch`
+  source: https://github.com/RetroidPocket/linux/commit/a432a615be0498793cde6a7524a2746e547c87e6
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support. Omit supports_cong_ctrl_max_msdus, absent in 7.2.
+
+- `patches/1159-wifi-ath12k-ahb-add-the-WCN7750-hybrid-bus-transport.patch`
+  source: https://github.com/RetroidPocket/linux/commit/69b93ff4671eb07c1e81015ed3a0ccc106486a02
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Backport to Armada Linux 7.2.6; retain existing WCN7860 and QDSS support. Keep the 7.2 IPQ probe and UserPD paths; add only the WCN7750 branch.
+
+- `patches/1160-wifi-ath12k-unwind-WCN7750-probe-failures.patch`
+  source: Armada; review of the RetroidPocket hybrid-bus transport.
+  upstream: No.
+  notes: Propagates PDC errors and unmaps MSI on probe failure.
+
+- `patches/1161-dt-bindings-net-wireless-describe-WCN7750-resources.patch`
+  source: Armada; RetroidPocket WCN7750 driver and board resources.
+  upstream: No.
+  notes: Documents the hybrid-bus resources in place of the experimental supplies-only binding.
+
 - `patches/1162-scsi-ufs-ufs-qcom-add-Eliza-match-data.patch`
   source: https://github.com/RetroidPocket/linux/commit/1213eb175774de1f4ba6577a4329bba58729840d
   upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
@@ -994,6 +1113,11 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: Armada; RetroidPocket Duo UFS configuration.
   upstream: No.
   notes: Allows the Eliza board to omit MCQ resources while preserving Nord's requirement.
+
+- `patches/1166-Bluetooth-qca-add-WCN7750-support.patch`
+  source: https://github.com/RetroidPocket/linux/commit/762bc03f0c4863bad8b935e844cc570517314784
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+  notes: Context refreshed for Armada's WCN7860 support, which is retained. Uses ORN firmware from the existing atheros-firmware package.
 
 - `patches/1181-cpufreq-dt-platdev-blocklist-eliza.patch`
   source: Armada

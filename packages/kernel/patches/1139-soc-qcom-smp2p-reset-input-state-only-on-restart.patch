@@ -1,0 +1,26 @@
+From: Armada <armada@armada.dev>
+Subject: [PATCH] soc: qcom: smp2p: reset input state only on restart
+
+With SSR acknowledgements negotiated, qcom_smp2p_check_ssr() clears
+last_value on every interrupt, even when the restart flag has not changed.
+The subsequent change detection therefore loses falling edges and can
+deliver duplicate rising-edge interrupts for unchanged high inputs.
+
+On the Duo, WLAN wake succeeds but the release acknowledgment times out:
+firmware clears bit 0, while smp2p_notify_in reports status 0.
+Return before clearing the saved input values unless a restart is detected.
+Keep the existing reset and acknowledgment behavior for actual restarts.
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -194,6 +194,9 @@ static bool qcom_smp2p_check_ssr(struct qcom_smp2p *smp2p)
+ 
+ 	restart_done = in->flags & BIT(SMP2P_FLAGS_RESTART_DONE_BIT);
+ 	restart = restart_done != smp2p->ssr_ack;
++	if (!restart)
++		return false;
++
+ 	list_for_each_entry(entry, &smp2p->inbound, node) {
+ 		if (!entry->value)
+ 			continue;
