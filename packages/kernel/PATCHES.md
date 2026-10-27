@@ -990,6 +990,10 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   upstream: https://git.kernel.org/torvalds/c/c53d30b2814e0f0215cdafe9ccf691eace2949ff
   notes: Include context refreshed for Linux 7.2.6; GPU thermal trips and cooling maps unchanged.
 
+- `patches/1111-drm-panel-vtdr6130-add-pocket-duo.patch`
+  source: Armada implementation from the unit's Android panel properties.
+  upstream: No.
+
 - `patches/1114-remoteproc-qcom-add-eliza-wpss.patch`
   source: Armada; existing Linux Milos/SC7280 WPSS support and Qualcomm Kera downstream sources, checked against the Duo Android FDT.
   upstream: No.
@@ -1127,6 +1131,21 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: https://github.com/RetroidPocket/linux/commit/762bc03f0c4863bad8b935e844cc570517314784
   upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
   notes: Context refreshed for Armada's WCN7860 support, which is retained. Uses ORN firmware from the existing atheros-firmware package.
+
+- `patches/1167-drm-msm-dpu-enable-eliza-inline-rotation.patch`
+  source: armada
+  upstream: local
+  notes: Adds inline rotation for Eliza
+
+- `patches/1168-drm-msm-dpu-enable-eliza-lutdma.patch`
+  source: armada
+  upstream: local
+  notes: Enables LUTDMA for Eliza, matching downstream kera (https://git.codelinaro.org/clo/la/platform/vendor/opensource/display-devicetree/-/blob/1c5de2a5c1743f0693d3b0ca5ff7ca158627fc6b/display/kera-sde-common.dtsi). Needs `0068`.
+
+- `patches/1169-arm64-dts-qcom-eliza-dpu-lutdma.patch`
+  source: armada
+  upstream: local
+  notes: Maps the Eliza DPU LUTDMA registers. Needs `0069`.
 
 - `patches/1181-cpufreq-dt-platdev-blocklist-eliza.patch`
   source: Armada

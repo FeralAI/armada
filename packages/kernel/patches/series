@@ -286,6 +286,7 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 1108-arm64-dts-qcom-eliza-gpu-smmu.patch
 1109-arm64-dts-qcom-eliza-gpu.patch
 1110-arm64-dts-qcom-eliza-gpu-cooling.patch
+1111-drm-panel-vtdr6130-add-pocket-duo.patch
 1114-remoteproc-qcom-add-eliza-wpss.patch
 1139-soc-qcom-smp2p-reset-input-state-only-on-restart.patch
 1140-wifi-ath12k-move-MSI-state-from-ath12k-pci-to-ath12k-base.patch
@@ -314,6 +315,9 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 1163-dt-bindings-ufs-allow-Eliza-legacy-doorbell-mode.patch
 1164-arm64-dts-qcom-eliza-add-i2c6.patch
 1166-Bluetooth-qca-add-WCN7750-support.patch
+1167-drm-msm-dpu-enable-eliza-inline-rotation.patch
+1168-drm-msm-dpu-enable-eliza-lutdma.patch
+1169-arm64-dts-qcom-eliza-dpu-lutdma.patch
 1181-cpufreq-dt-platdev-blocklist-eliza.patch
 1182-arm64-dts-qcom-eliza-add-cpu-l3-scaling.patch
 1302-input-rsinput-support-retroid-pocket-duo.patch
