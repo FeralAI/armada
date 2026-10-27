@@ -248,6 +248,10 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0506-usbcore-add-interrupt-interval-override.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0506-usbcore-add-interrupt-interval-override.patch
   upstream: unknown
+- `patches/1008-HID-uhid-read-the-output-queue-under-qlock.patch`
+  source: armada
+  upstream: local
+  notes: Fixes a NULL dereference in `uhid_char_read()` on arm64 that orphans InputPlumber's virtual controller and stalls Steam's controller thread until reboot. Mainline carries the same lockless read; this is a candidate for upstream submission.
 - `patches/0071-HACK-fix-usb-boot-hang.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0071-HACK-fix-usb-boot-hang.patch
   upstream: unknown
