@@ -28,7 +28,7 @@ done
 for p in patches/*/*.patch; do
     board=%{buildroot}%{_datadir}/armada/ssc/$(basename "$(dirname "${p}")")
     patch -d "${board}" -p1 --no-backup-if-mismatch --forward < "${p}"
-    # Patched files keep the archive's mtime 0; see README.md.
+    # Nonzero mtimes make the ADSP reparse the sensor configs.
     find "${board}" -newermt @0 -exec touch -h -d @0 {} +
 done
 

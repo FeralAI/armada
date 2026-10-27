@@ -1,5 +1,7 @@
-Turn off SSC island mode on the Odin 3. With island on, s2idle entered right
-after a sensor close hangs the SoC.
+From: virtudude <virtudude@protonmail.com>
+Subject: [PATCH] ayn-odin-3: turn off SSC island mode
+
+With island on, s2idle entered right after a sensor close hangs the SoC.
 
 --- a/sensors/config/pakala_power_0.json
 +++ b/sensors/config/pakala_power_0.json
