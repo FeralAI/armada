@@ -318,6 +318,17 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 1167-drm-msm-dpu-enable-eliza-inline-rotation.patch
 1168-drm-msm-dpu-enable-eliza-lutdma.patch
 1169-arm64-dts-qcom-eliza-dpu-lutdma.patch
+1170-arm64-dts-qcom-eliza-add-adsp-gpr.patch
+1171-arm64-dts-qcom-eliza-add-lpass.patch
+1172-pinctrl-qcom-add-eliza-lpass-lpi.patch
+1173-ASoC-qcom-q6apm-add-mi2s-clocks.patch
+1174-ASoC-qcom-enable-quaternary-jack.patch
+1175-ASoC-qcom-configure-eliza-mi2s-clocks.patch
+1176-ASoC-es8326-enable-codec-supplies.patch
+1177-dt-bindings-describe-eliza-audio-resources.patch
+1178-ASoC-qcom-q6prm-add-missing-mclk-ids.patch
+1179-ASoC-qcom-fix-duo-speaker-slot-width.patch
+1180-ASoC-qcom-q6apm-allow-s32-playback.patch
 1181-cpufreq-dt-platdev-blocklist-eliza.patch
 1182-arm64-dts-qcom-eliza-add-cpu-l3-scaling.patch
 1302-input-rsinput-support-retroid-pocket-duo.patch

@@ -1147,6 +1147,56 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   upstream: local
   notes: Maps the Eliza DPU LUTDMA registers. Needs `0069`.
 
+- `patches/1170-arm64-dts-qcom-eliza-add-adsp-gpr.patch`
+  source: https://github.com/RetroidPocket/linux/commit/23da74833df803c5e8bea71feb878173764ef121
+  upstream: https://lore.kernel.org/r/20260724-dts-qcom-eliza-add-gpr-v3-1-2595beb0cdec@oss.qualcomm.com
+  notes: Context refreshed for Armada's Eliza DTS.
+
+- `patches/1171-arm64-dts-qcom-eliza-add-lpass.patch`
+  source: https://github.com/RetroidPocket/linux/commit/b9f1f97846bcb1989bb52b6cbd1205ecc22c8e43
+  upstream: https://lore.kernel.org/r/20260731084032.3106477-2-ravi.hothi@oss.qualcomm.com
+  notes: Context refreshed for Armada's Eliza DTS.
+
+- `patches/1172-pinctrl-qcom-add-eliza-lpass-lpi.patch`
+  source: https://github.com/RetroidPocket/linux/commit/82c3edf8701154e2768973ebd4c0d2f3bd29621e
+  upstream: https://patch.msgid.link/20260715132150.1322663-3-ravi.hothi@oss.qualcomm.com
+
+- `patches/1173-ASoC-qcom-q6apm-add-mi2s-clocks.patch`
+  source: https://github.com/RetroidPocket/linux/commit/cc8495c1d45ab113a638b5df6c2e0bfa150a7376
+  upstream: https://patch.msgid.link/20260724182446.1484894-3-mohammad.rafi.shaik@oss.qualcomm.com
+  notes: Retains Armada's graph suspend/restore state and prepare-time RX start.
+
+- `patches/1174-ASoC-qcom-enable-quaternary-jack.patch`
+  source: https://github.com/RetroidPocket/linux/commit/19e15b7d6f340dd636e54eb5b39a2991453d8ad5
+  upstream: unknown
+  notes: Context refreshed; Armada lacks the newer LPI_MI2S_RX_0 case.
+
+- `patches/1175-ASoC-qcom-configure-eliza-mi2s-clocks.patch`
+  source: https://github.com/RetroidPocket/linux/commit/592a27a5a0376a80db2271c6e97c4f7643b279d8
+  upstream: unknown
+  notes: Adapts the reference hw_params clock/codec setup to Armada's existing machine driver, scoped to Eliza. Configures both speaker codecs; retains the existing 48 kHz stereo S16_LE backend format.
+
+- `patches/1176-ASoC-es8326-enable-codec-supplies.patch`
+  source: https://github.com/RetroidPocket/linux/commit/f8dfc9104b7c24de07fd839c1cc6468640f2e2a1
+  upstream: unknown
+  notes: Uses managed bulk regulator enable, propagating probe deferral and unwinding on probe failure/unbind.
+
+- `patches/1177-dt-bindings-describe-eliza-audio-resources.patch`
+  source: armada
+  upstream: local
+
+- `patches/1178-ASoC-qcom-q6prm-add-missing-mclk-ids.patch`
+  source: https://github.com/RetroidPocket/linux/commit/a2fdf929fbb491f3bf4d3cadb5a7cc7c90182c0f
+  upstream: https://patch.msgid.link/20260731162626.1588561-3-srinivas.kandagatla@oss.qualcomm.com
+
+- `patches/1179-ASoC-qcom-fix-duo-speaker-slot-width.patch`
+  source: armada; register definitions from https://github.com/awinic-driver/aw883xx/blob/main/aw883xx_pid_2066_reg.h
+  upstream: local
+
+- `patches/1180-ASoC-qcom-q6apm-allow-s32-playback.patch`
+  source: armada
+  upstream: local
+
 - `patches/1181-cpufreq-dt-platdev-blocklist-eliza.patch`
   source: Armada
   upstream: local
