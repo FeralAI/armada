@@ -943,6 +943,11 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: https://github.com/RetroidPocket/linux/commit/ba970587a0e1203b6a0934b5b9174886b4c4d24c
   upstream: https://patchwork.freedesktop.org/patch/753014/
 
+- `dts/sm7750-retroidpocket-duo.dts`
+  source: armada
+  upstream: local
+  notes: Standalone Duo board description using the shared IL97680A driver for the bottom panel, with three supplies and normal orientation.
+
 - `patches/1100-drm-msm-a6xx-fix-a730-hwcg.patch`
   source: https://git.kernel.org/torvalds/c/01bcc0398f43099acb407a6067481e635c3e1b84
   upstream: https://git.kernel.org/torvalds/c/01bcc0398f43099acb407a6067481e635c3e1b84
