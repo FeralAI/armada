@@ -39,15 +39,17 @@ BEGIN {
     if (value > source_max || gamma <= 0 || input_min < 0 || input_min >= 1 ||
         output_min < 0 || output_min > 1)
         fail("invalid backlight value, gamma or minimum")
-    if (gamma == 1 && input_min == 0 && output_min == 0) {
-        print int(value * target_max / source_max)
+    minimum = int(output_min * target_max)
+    if (minimum < output_min * target_max) minimum++
+    if (gamma == 1 && input_min == 0) {
+        # Preserve linear light requests above the minimum.
+        result = int(value * target_max / source_max)
+        print (result < minimum ? minimum : result)
         exit
     }
 
     # Steam truncates its light request before calling the helper.
     source_min = int(input_min * source_max)
-    minimum = int(output_min * target_max)
-    if (minimum < output_min * target_max) minimum++
     if (value <= source_min) {
         print minimum
         exit

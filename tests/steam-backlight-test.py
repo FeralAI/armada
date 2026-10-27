@@ -67,6 +67,25 @@ class SteamBacklightTest(unittest.TestCase):
         self.assertEqual(convert(5625, 10000, 2000, 2, .25, .1), 1100)
         self.assertEqual(convert(60, 100, 1000, 1, .2, .1), 550)
 
+    def test_default_minimum(self):
+        for maximum, minimum in ((1, 1), (100, 1), (255, 3), (4095, 41)):
+            self.assertEqual(convert(0, maximum, maximum, 1, 0, .01), minimum)
+            self.assertEqual(convert(maximum, maximum, maximum, 1, 0, .01), maximum)
+        values = [convert(v, 100, 255, 1, 0, .01) for v in range(101)]
+        self.assertEqual(values, sorted(values))
+        self.assertGreater(min(values), 0)
+
+    def test_default_floor_preserves_linear_requests(self):
+        # Thor's driver already exposes linear luminance. Preserve requests
+        # above the floor, including when steering between backlight ranges.
+        for source_max, target_max in ((4096, 4096), (100, 4096), (4096, 255)):
+            minimum = (target_max + 99) // 100
+            for value in (0, 1, source_max // 100, source_max // 2, source_max):
+                expected = max(minimum, value * target_max // source_max)
+                self.assertEqual(convert(value, source_max, target_max, 1, 0, .01),
+                                 expected)
+        self.assertEqual(convert(2048, 4096, 4096, 1, 0, .01), 2048)
+
     def test_low_slider_steps_have_no_clamped_region(self):
         # Steam's integer outputs at 0%, 1%, 2%, and 5% slider positions.
         values = [convert(v, 3445, 3445, 2.4, .01, .05) for v in (34, 36, 39, 48)]
@@ -128,6 +147,7 @@ class SteamBacklightTest(unittest.TestCase):
                 ("", "2.4", ".01", ".05", None, False),
                 ("", "1", ".01", "0", "linear", False),
                 ("", "1", "0", ".05", "linear", False),
+                ("", "1", "0", ".01", "non-linear", False),
                 ("primary", "1", "0", "0", "linear", False),
             ):
                 scale_path = brightness.parent / "scale"
@@ -230,7 +250,7 @@ class SteamBacklightTest(unittest.TestCase):
             self.assertIn('ARMADA_BACKLIGHT_INPUT_MIN=' +
                           ('0.01' if model == 'Retroid Pocket Nova' else '0') + '\n', output)
             self.assertIn('ARMADA_BACKLIGHT_MIN=' +
-                          ('0.05' if model == 'Retroid Pocket Nova' else '0') + '\n', output)
+                          ('0.05' if model == 'Retroid Pocket Nova' else '0.01') + '\n', output)
 
 
 if __name__ == "__main__":
