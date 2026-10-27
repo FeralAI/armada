@@ -1,0 +1,87 @@
+From: Armada <no-reply@armadaos.dev>
+Subject: [PATCH] freedreno,tu: minimum image size for mutable UBWC
+
+On A740, keeping UBWC on every mutable image breaks some games. Truxton
+Extreme creates a 64x64 R16G16B16A16_UNORM image (format list unorm,
+snorm, uint, sint, float), renders into it through a FLOAT view each
+frame, then reads it with vkCmdCopyImageToBuffer, which uses the image's
+UNORM format. UBWC data written as FLOAT doesn't decode as UNORM, so the
+copy returns garbage and the game's overlays and bloom come out black or
+white. Marking the image is_mutable doesn't help on A740. A722 runs the
+same sequence and decodes it correctly, so this is an A740 limitation.
+Full-screen render targets with the same format list are fine, since
+games write and read them through one format, and those are where UBWC
+pays off: Platypus Reclayed's 1920x1080 RGBA16 targets run about 30%
+faster with UBWC than without.
+
+So with TU_Z_MUTABLE=2, a mutable image only keeps UBWC if its width times
+height is at least the GPU's new mutable_ubwc_min_pixels property. Smaller
+images stay tiled without UBWC, as with TU_Z_MUTABLE=1.
+
+  - default 0: every size keeps UBWC (A722 and A650 are fine this way)
+  - FD740 (A740, Adreno X1-85) sets 65536, i.e. 256x256
+
+TU_Z_MUTABLE_MIN_PIXELS=<pixels> overrides the property on any GPU, for
+example 0 to drop the limit when testing a game.
+---
+diff --git a/src/freedreno/common/freedreno_dev_info.h b/src/freedreno/common/freedreno_dev_info.h
+index 18717e2..89040a0 100644
+--- a/src/freedreno/common/freedreno_dev_info.h
++++ b/src/freedreno/common/freedreno_dev_info.h
+@@ -442,6 +442,11 @@ struct fd_dev_info {
+        */
+       bool storage_ubwc_internal_quirk;
+ 
++      /* Under TU_Z_MUTABLE=2, MUTABLE_FORMAT images keep UBWC only if
++       * they have at least this many pixels (0: any size).
++       */
++      uint32_t mutable_ubwc_min_pixels;
++
+       /* Whether CP_ALWAYS_ON_COUNTER only resets on device loss rather than
+        * on every suspend/resume.
+        */
+diff --git a/src/freedreno/common/freedreno_devices.py b/src/freedreno/common/freedreno_devices.py
+index 040c423..ff6df12 100644
+--- a/src/freedreno/common/freedreno_devices.py
++++ b/src/freedreno/common/freedreno_devices.py
+@@ -1289,7 +1289,7 @@ add_gpus([
+         GPUId(chip_id=0xffff43050c01, name="Adreno X1-85"),
+     ], A6xxGPUInfo(
+         CHIP.A7XX,
+-        [a7xx_base, a7xx_gen2],
++        [a7xx_base, a7xx_gen2, GPUProps(mutable_ubwc_min_pixels = 65536)],
+         num_ccu = 6,
+         tile_align_w = 96,
+         tile_align_h = 32,
+diff --git a/src/freedreno/vulkan/tu_image.cc b/src/freedreno/vulkan/tu_image.cc
+index b3ba154..f9e7144 100644
+--- a/src/freedreno/vulkan/tu_image.cc
++++ b/src/freedreno/vulkan/tu_image.cc
+@@ -34,6 +34,7 @@
+ #include "tu_wsi.h"
+ 
+ DEBUG_GET_ONCE_NUM_OPTION(tu_z_mutable, "TU_Z_MUTABLE", 2)
++DEBUG_GET_ONCE_NUM_OPTION(tu_z_mutable_min_pixels, "TU_Z_MUTABLE_MIN_PIXELS", -1)
+ 
+ uint32_t
+ tu6_plane_count(VkFormat format)
+@@ -631,7 +632,18 @@ tu_image_init(struct tu_device *device, struct tu_image *image,
+             force_linear_tile = true;
+          } else if (!mutable_ubwc_fc) {
+             int64_t z_mutable = debug_get_option_tu_z_mutable();
+-            if (ubwc_enabled && z_mutable < 2) {
++            /* A740 can't decode UBWC written through one format and read
++             * through another (a FLOAT render target copied out as UNORM),
++             * so there only render-target-sized images keep UBWC.
++             */
++            int64_t z_min_pixels = debug_get_option_tu_z_mutable_min_pixels();
++            if (z_min_pixels < 0)
++               z_min_pixels = device->physical_device->info->props.mutable_ubwc_min_pixels;
++            bool z_keep_ubwc =
++               z_mutable >= 2 &&
++               (int64_t)image->vk.extent.width * image->vk.extent.height >=
++                  z_min_pixels;
++            if (ubwc_enabled && !z_keep_ubwc) {
+                if (fmt_list && fmt_list->viewFormatCount == 2) {
+                   perf_debug(
+                      device,

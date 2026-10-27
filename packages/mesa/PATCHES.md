@@ -4,20 +4,10 @@ Patches applied on top of BASE.env. Each entry's `source` is an upstream URL pin
 to a commit, or `armada` if it's original; a URL source with no `notes` is verbatim.
 `notes` mean the file was modified.
 
-- `patches/0001-disable-turnip-sparse-sync.patch`
-  source: https://github.com/batocera-linux/batocera.linux/blob/bca5c05d90b606ad859ba2e4e82ab0a515ccb956/board/batocera/patches/mesa3d/001-fix-freedreno-vulkan.patch
-  notes: temporary diagnostic workaround for A740 GPU translation-fault storms;
-  disables the graphics/sparse-queue cross-sync introduced by Mesa commit
-  `0cc0e786e096dca8cfd88d7088ab7e1a0147d045`
-
 - `patches/0002-add-a830-chip-id.patch`
 source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/packages/graphics/mesa/patches/SM8750/0001-add-a830-chip-id.patch
   affects: A830
   notes: new patch header; chip IDs verbatim.
-
-- `patches/0003-ir3-disable-bindless-ubo-const-lowering.patch`
-  source: https://github.com/ROCKNIX/distribution/blob/0adbe00f1745512609b289ef9435df897c28b780/projects/ROCKNIX/packages/graphics/mesa/patches/SM8550/0001-freedreno-ir3-vulkan-disable-bindless-ubo-const-lowering.patch
-  notes: offsets updated for Mesa 26.2.0
 
 - `patches/0004-freedreno-add-a722-support.patch`
 source: https://gitlab.freedesktop.org/mesa/mesa/-/commit/803731f7ed4aa8e8265fe0aff08b85efb3f3c7e9
@@ -44,6 +34,35 @@ source: armada
 - `patches/0009-freedreno-a722-two-ccus-tile-align-32.patch`
 source: armada
   affects: A722
+
+- `patches/0010-tu-autotune-lower-gmem-bandwidth-multiplier.patch`
+source: https://github.com/WinNative-Emu/Drivers/blob/c71f600a2977a141f21a922c9ed2e14fb09b13d3/patches/apply_balance_variant.py
+  affects: all GPUs
+  notes: script converted to a patch
+
+- `patches/0011-tu-z-mutable-ubwc.patch`
+source: https://github.com/Vauzi-17/710/blob/6828465a8bc2ae08b705e4a67a6a2bb76197e231/patches/30-tu-z-mutable.py
+  affects: A6xx and A7xx up to A740 (not A750 or A8xx)
+  notes: script converted to a patch
+
+- `patches/0012-tu-z-mutable-ubwc-min-pixels.patch`
+source: armada
+  affects: A740
+
+- `patches/0013-freedreno-a7xx-gen1-no-early-preamble.patch`
+source: armada
+  affects: A710, A720, A722, A725, A730 (A710 and A720 only on devel)
+
+- `patches/disabled/0001-disable-turnip-sparse-sync.patch`
+source: https://github.com/batocera-linux/batocera.linux/blob/bca5c05d90b606ad859ba2e4e82ab0a515ccb956/board/batocera/patches/mesa3d/001-fix-freedreno-vulkan.patch
+  notes: disables the graphics/sparse-queue cross-sync added by Mesa 0cc0e786e096.
+  disabled: a temporary diagnostic workaround for A740 GPU translation-fault storms.
+
+- `patches/disabled/0003-ir3-disable-bindless-ubo-const-lowering.patch`
+source: https://github.com/ROCKNIX/distribution/blob/0adbe00f1745512609b289ef9435df897c28b780/projects/ROCKNIX/packages/graphics/mesa/patches/SM8550/0001-freedreno-ir3-vulkan-disable-bindless-ubo-const-lowering.patch
+  notes: offsets updated for 26.2.0.
+  disabled: ROCKNIX dropped it as no longer needed, and upstream fixed the related
+  bugs in 2a841d0d and 2755d64a.
 
 ## Variants
 
