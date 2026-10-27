@@ -107,6 +107,7 @@
 0620-drm-msm-a6xx-hfi-irq-clears-only-the-cm3-fault.patch
 0621-drm-msm-a6xx-bound-the-gmu-wait-for-a-fault-devcoredump.patch
 0622-drm-msm-a6xx-mask-the-hfi-interrupt-before-booting-the-gmu.patch
+0624-drm-msm-a6xx-increase-gmu-fw-init-timeout.patch
 0623-arm64-dts-qcom-sm8550-sm8650-add-the-ADSP-FastRPC-remote-heap.patch
 
 # ============== LED / RGB ==============
@@ -271,3 +272,18 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 # ============== Firmware ==============
 # OpenABL: UEFI variables through QSEECOM on its chipsets
 0910-firmware-qcom-scm-allow-QSEECOM-on-OpenABL-s-platforms.patch
+
+# ============== SM7750 (Retroid Pocket Duo) ==============
+1100-drm-msm-a6xx-fix-a730-hwcg.patch
+1101-drm-msm-a6xx-rename-gbif-cx-config.patch
+1102-drm-msm-a6xx-add-adreno-722.patch
+1103-dt-bindings-arm-smmu-eliza-gpu.patch
+1104-dt-bindings-display-msm-adreno-722.patch
+1105-dt-bindings-clock-eliza-gpucc.patch
+1106-clk-qcom-add-eliza-gpucc.patch
+1107-arm64-dts-qcom-eliza-gpu-clock.patch
+1108-arm64-dts-qcom-eliza-gpu-smmu.patch
+1109-arm64-dts-qcom-eliza-gpu.patch
+1110-arm64-dts-qcom-eliza-gpu-cooling.patch
+1181-cpufreq-dt-platdev-blocklist-eliza.patch
+1182-arm64-dts-qcom-eliza-add-cpu-l3-scaling.patch
