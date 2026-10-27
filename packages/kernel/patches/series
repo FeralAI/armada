@@ -285,5 +285,7 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 1108-arm64-dts-qcom-eliza-gpu-smmu.patch
 1109-arm64-dts-qcom-eliza-gpu.patch
 1110-arm64-dts-qcom-eliza-gpu-cooling.patch
+1162-scsi-ufs-ufs-qcom-add-Eliza-match-data.patch
+1163-dt-bindings-ufs-allow-Eliza-legacy-doorbell-mode.patch
 1181-cpufreq-dt-platdev-blocklist-eliza.patch
 1182-arm64-dts-qcom-eliza-add-cpu-l3-scaling.patch
