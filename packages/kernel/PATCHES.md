@@ -934,6 +934,11 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   upstream: local
   notes: Uses single-channel associated scans with TX draining and home-channel rest. Tested on KONKR Pocket FIT Elite.
 
+- `patches/1303-serial-qcom-geni-allow-shorter-rx-dma-transfer.patch`
+  source: armada
+  upstream: local
+  notes: Adds an optional qcom,rx-dma-len DT property to shorten GENI UART RX DMA transfers. The Duo gamepad MCU streams without idle gaps, so the default 2048-byte transfer delivered input in ~245 ms bursts.
+
 - `patches/0624-drm-msm-a6xx-increase-gmu-fw-init-timeout.patch`
   source: https://github.com/RetroidPocket/linux/commit/ba970587a0e1203b6a0934b5b9174886b4c4d24c
   upstream: https://patchwork.freedesktop.org/patch/753014/
@@ -1114,6 +1119,10 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   upstream: No.
   notes: Allows the Eliza board to omit MCQ resources while preserving Nord's requirement.
 
+- `patches/1164-arm64-dts-qcom-eliza-add-i2c6.patch`
+  source: https://github.com/RetroidPocket/linux/commit/aaa9c19f21f7c651f4a5dd270170f5862b6cabc0
+  upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
+
 - `patches/1166-Bluetooth-qca-add-WCN7750-support.patch`
   source: https://github.com/RetroidPocket/linux/commit/762bc03f0c4863bad8b935e844cc570517314784
   upstream: RetroidPocket downstream tree, not confirmed merged in mainline.
@@ -1126,3 +1135,13 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/1182-arm64-dts-qcom-eliza-add-cpu-l3-scaling.patch`
   source: Armada
   upstream: local
+
+- `patches/0515a-input-rsinput-accept-large-uart-batches.patch`
+  source: armada
+  upstream: local
+  notes: Feed large UART receive batches through the existing frame reassembly buffer without dropping complete frames.
+
+- `patches/1302-input-rsinput-support-retroid-pocket-duo.patch`
+  source: armada
+  upstream: local
+  notes: Add configurable ADC references and share reset and supply sequencing between probe and resume; existing board defaults are retained.
