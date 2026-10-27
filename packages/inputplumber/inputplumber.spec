@@ -21,6 +21,7 @@ Patch4:         0004-fix-Hardware-Support-KONKR-Pocket-FIT-MCU-system-buttons.pa
 Patch5:         0005-feat-ssc-qualcomm-sensor-core-support.patch
 Patch6:         0006-feat-ssc-gyro-auto-calibration.patch
 Patch7:         0007-feat-ssc-device-enablement.patch
+Patch8:         0008-feat-ssc-suspend-source-devices-across-system-sleep.patch
 
 BuildRequires:  cargo
 BuildRequires:  rust
