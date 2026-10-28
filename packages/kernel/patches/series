@@ -77,6 +77,7 @@
 0505-arm64-emulate-unaligned-atomics.patch
 0505a-arm64-unaligned-atomics-cover-the-load128-store-exclusive.patch
 0506-usbcore-add-interrupt-interval-override.patch
+1008-HID-uhid-read-the-output-queue-under-qlock.patch
 
 # ============== USB boot hang fix ==============
 0071-HACK-fix-usb-boot-hang.patch
@@ -123,6 +124,7 @@
 20260424_neil_armstrong_arm64_dts_qcom_sm8_456_50_add_missing_cx_power_domain_to_gcc.patch
 v9_20260729_qualcomm_crypto_qce_runtime_pm_interconnect.patch
 v3_20261002_anandu_e_misc_fastrpc_fix_context_leak_and_hang_on_signal_interrupted_invoke.patch
+0569-soc-qcom-smp2p-reset-inbound-state-only-on-restart.patch
 0504-mailbox-qcom-ipcc-mask-summary-irq-for-suspend-to-ram.patch
 0505-msm_gem-lock-before-put_iova_spaces.patch
 0204-thermal-qcom-tsens-mask-lower-threshold-irqs-across-suspend.patch
@@ -288,7 +290,6 @@ v2_20260420_neil_armstrong_arm64_qcom_sm8650_misc_enhancements.patch
 1110-arm64-dts-qcom-eliza-gpu-cooling.patch
 1111-drm-panel-vtdr6130-add-pocket-duo.patch
 1114-remoteproc-qcom-add-eliza-wpss.patch
-1139-soc-qcom-smp2p-reset-input-state-only-on-restart.patch
 1140-wifi-ath12k-move-MSI-state-from-ath12k-pci-to-ath12k-base.patch
 1141-wifi-ath12k-share-the-register-window-geometry-with-the-core.patch
 1142-wifi-ath12k-let-the-MSI-CE-DP-IRQ-setup-serve-platform-devices.patch

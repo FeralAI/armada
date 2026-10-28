@@ -248,6 +248,10 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
 - `patches/0506-usbcore-add-interrupt-interval-override.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0506-usbcore-add-interrupt-interval-override.patch
   upstream: unknown
+- `patches/1008-HID-uhid-read-the-output-queue-under-qlock.patch`
+  source: armada
+  upstream: local
+  notes: Fixes a NULL dereference in `uhid_char_read()` on arm64 that orphans InputPlumber's virtual controller and stalls Steam's controller thread until reboot. Mainline carries the same lockless read; this is a candidate for upstream submission.
 - `patches/0071-HACK-fix-usb-boot-hang.patch`
   source: https://github.com/ROCKNIX/distribution/blob/bcf3b5bc574990b96543484575b06f912153a715/projects/ROCKNIX/devices/SM8550/patches/linux/0071-HACK-fix-usb-boot-hang.patch
   upstream: unknown
@@ -335,6 +339,9 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: https://lore.kernel.org/r/20261002-anandu-fastrpc-interrupted-invoke-v3-v3-1-31e90439d2ba@oss.qualcomm.com
   upstream: https://lore.kernel.org/r/20261002-anandu-fastrpc-interrupted-invoke-v3-v3-1-31e90439d2ba@oss.qualcomm.com
   notes: Backported to 7.2's inline wait, and put_work_scheduled uses xchg() instead of fl->lock because the rpmsg callback runs in hard IRQ; the commit message still describes v3.
+- `patches/0569-soc-qcom-smp2p-reset-inbound-state-only-on-restart.patch`
+  source: armada
+  upstream: local
 - `patches/0504-mailbox-qcom-ipcc-mask-summary-irq-for-suspend-to-ram.patch`
   source: https://github.com/ROCKNIX/distribution/commit/f955f5b6137554253e4d52bbe72f9b4936fb253d
   upstream: not submitted
@@ -1003,10 +1010,6 @@ no equivalent submission was found, or a permanent URL to the upstream submissio
   source: Armada; existing Linux Milos/SC7280 WPSS support and Qualcomm Kera downstream sources, checked against the Duo Android FDT.
   upstream: No.
   notes: Reuses the PAS driver with auto_boot=false. Adds the WPSS firmware processor support used by the WCN7750 ath12k backport.
-
-- `patches/1139-soc-qcom-smp2p-reset-input-state-only-on-restart.patch`
-  source: Armada; Duo SMP2P wake/release trace and Linux qcom_smp2p_check_ssr() regression reproducer.
-  upstream: No.
 
 - `patches/1140-wifi-ath12k-move-MSI-state-from-ath12k-pci-to-ath12k-base.patch`
   source: https://github.com/RetroidPocket/linux/commit/be7f234a62cd0a47ce043fa9329faaef509eb030
