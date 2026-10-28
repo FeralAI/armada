@@ -36,7 +36,7 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: https://github.com/Vauzi-17/710/blob/6828465a8bc2ae08b705e4a67a6a2bb76197e231/patches/30-tu-z-mutable.py
   affects: A6xx and A7xx up to A740 (not A750 or A8xx)
   notes: script converted to a patch
-- `patches/0012-tu-z-mutable-ubwc-min-pixels.patch`
+- `patches/0012-tu-z-mutable-ubwc-copy-format.patch`
   source: armada
   affects: A740
 - `patches/0013-freedreno-a7xx-gen1-no-early-preamble.patch`
