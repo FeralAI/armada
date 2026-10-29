@@ -47,18 +47,9 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
 - `patches/0013-freedreno-a7xx-gen1-no-early-preamble.patch`
   source: armada
   affects: A710, A720, A722, A725, A730 (A710 and A720 only on devel)
-
-Disabled (kept in `patches/disabled/`, which isn't applied):
-
-- `patches/disabled/0001-disable-turnip-sparse-sync.patch`
-  source: https://github.com/batocera-linux/batocera.linux/blob/bca5c05d90b606ad859ba2e4e82ab0a515ccb956/board/batocera/patches/mesa3d/001-fix-freedreno-vulkan.patch
-  notes: disables the graphics/sparse-queue cross-sync added by Mesa 0cc0e786e096.
-  disabled: a temporary diagnostic workaround for A740 GPU translation-fault storms.
-- `patches/disabled/0003-ir3-disable-bindless-ubo-const-lowering.patch`
-  source: https://github.com/ROCKNIX/distribution/blob/0adbe00f1745512609b289ef9435df897c28b780/projects/ROCKNIX/packages/graphics/mesa/patches/SM8550/0001-freedreno-ir3-vulkan-disable-bindless-ubo-const-lowering.patch
-  notes: offsets updated for 26.2.0.
-  disabled: ROCKNIX dropped it as no longer needed, and upstream fixed the related
-  bugs in 2a841d0d and 2755d64a.
+- `patches/0014-freedreno-a722-wfi-binning-vertex-buffer-changes.patch`
+  source: armada
+  affects: A722
 
 ## Variants
 
@@ -69,7 +60,7 @@ apply (`BASE_PATCHES`, default all), or takes both from another variant
 
 ### devel
 
-Mesa main with 0005-0013 (0002 and 0004 are upstream).
+Mesa main with 0001 and 0005-0014 (0002 and 0004 are upstream).
 
 ### winnative
 
