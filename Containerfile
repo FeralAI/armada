@@ -101,6 +101,9 @@ FROM ${ARMADA_RGB_REF} AS armada-rgb
 ARG ARMADA_SSC_REF
 FROM ${ARMADA_SSC_REF} AS armada-ssc
 
+ARG DTBLOADER_REF
+FROM ${DTBLOADER_REF} AS dtbloader
+
 ARG UMTP_RESPONDER_REF
 FROM ${UMTP_RESPONDER_REF} AS umtp-responder
 
@@ -157,6 +160,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=armada-rgb,source=/rpms,target=/packages/armada-rgb \
     --mount=type=bind,from=armada-ssc,source=/rpms,target=/packages/armada-ssc \
     --mount=type=bind,from=openabl-updater,source=/rpms,target=/packages/openabl-updater \
+    --mount=type=bind,from=dtbloader,source=/rpms,target=/packages/dtbloader \
     --mount=type=bind,from=umtp-responder,source=/rpms,target=/packages/umtp-responder \
     --mount=type=bind,from=decky-build,source=/build/armada-control/dist,target=/packages/decky-dist \
     --mount=type=bind,from=decky-build,source=/build/armada-store/dist,target=/packages/decky-store-dist \
